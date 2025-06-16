@@ -93,6 +93,7 @@ cd VisionX
 npm install
 npm run dev
 ```
+---
 
 📈 Impact
 - ⏱️ Saves time in physical stores
@@ -100,7 +101,7 @@ npm run dev
 - 😎 Increases fashion confidence
 - 🔝 Democratizes access to premium and trending styles
 
-⸻
+---
 
 📚 References & Research
 - HuggingFace Models
@@ -109,7 +110,7 @@ npm run dev
 - Kaggle Datasets: Fashion Product Data
 - Inspiration: Lenskart, Snapchat Filters, Zara Virtual Mirror
 
-⸻
+---
 
 🏁 Future Plans
 - 👟 Add Shoe Try-On
@@ -118,6 +119,6 @@ npm run dev
 - 🛍️ Direct Add-to-Cart integrations for Amazon/Flipkart
 - 🧑‍💻 Mobile App version
 
-⸻
+---
 
 📣 Give it a ⭐ if you like the vision!
