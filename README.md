@@ -95,28 +95,28 @@ npm run dev
 ```
 
 📈 Impact
-•⏱️ Saves time in physical stores
-•🛍️↩️ Reduces online fashion purchase returns
-•	😎 Increases fashion confidence
-•	🔝 Democratizes access to premium and trending styles
+- ⏱️ Saves time in physical stores
+- 🛍️ Reduces online fashion purchase returns
+- 😎 Increases fashion confidence
+- 🔝 Democratizes access to premium and trending styles
 
 ⸻
 
 📚 References & Research
-	•	HuggingFace Models
-	•	MediaPipe
-	•	Aceternity UI
-	•	Kaggle Datasets: Fashion Product Data
-	•	Inspiration: Lenskart, Snapchat Filters, Zara Virtual Mirror
+- HuggingFace Models
+-  MediaPipe
+- Aceternity UI
+- Kaggle Datasets: Fashion Product Data
+- Inspiration: Lenskart, Snapchat Filters, Zara Virtual Mirror
 
 ⸻
 
 🏁 Future Plans
-	•	👟 Add Shoe Try-On
-	•	🧢 Add Hat / Cap overlays
-	•	💬 AI Chat Stylist
-	•	🛍️ Direct Add-to-Cart integrations for Amazon/Flipkart
-	•	🧑‍💻 Mobile App version
+- 👟 Add Shoe Try-On
+- 🧢 Add Hat / Cap overlays
+- 💬 AI Chat Stylist
+- 🛍️ Direct Add-to-Cart integrations for Amazon/Flipkart
+- 🧑‍💻 Mobile App version
 
 ⸻
 
