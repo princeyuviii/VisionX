@@ -95,10 +95,10 @@ npm run dev
 ```
 
 📈 Impact
-	•	Saves time in physical stores ⏱️
-	•	Reduces online fashion purchase returns 🛍️↩️
-	•	Increases fashion confidence 😎
-	•	Democratizes access to premium and trending styles 🔝
+•⏱️ Saves time in physical stores
+•🛍️↩️ Reduces online fashion purchase returns
+•	😎 Increases fashion confidence
+•	🔝 Democratizes access to premium and trending styles
 
 ⸻
 
