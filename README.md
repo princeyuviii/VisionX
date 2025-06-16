@@ -6,7 +6,7 @@
 
 ## 🚀 Live Demo (Coming Soon)
 🎯 [Demo Link](https://your-demo-link.com) — *(Under Development)*  
-🛠️ Built for: **IEEE TechSangam Hackathon 2025 – MIT-ADT University**
+🛠️ Built for: **AI ML Hackathon 2.0 - Parul University**
 
 ---
 
@@ -50,23 +50,38 @@ VisionX is a **real-time AR-based try-on platform** where users can:
 | 🎥 AR Overlay | MediaPipe, TensorFlow.js, React-Webcam |
 | 🤖 Recommendation | HuggingFace Transformers (e.g., T5, BERT), Kaggle dataset |
 | 🧠 AI & Body Type | Face & Body Analysis models from HuggingFace |
-| 💾 Database (Optional) | Firebase / Supabase |
+| 💾 Database | Firebase / Supabase / MongoDB |
 | ⚙️ Tools | GitHub, VS Code, Gamma.app, Figma (for mockups) |
 
 ---
 
 ## 📂 Project Structure
 
-VisionX/
-├── public/
-├── src/
-│   ├── components/
-│   ├── pages/
-│   ├── styles/
-│   └── utils/
-├── .gitignore
-├── README.md
-└── package.json
+📁 app
+├── 📁 community
+│   └── page.tsx
+├── 📁 how-it-works
+│   └── page.tsx
+├── 📁 recommend
+│   └── page.tsx
+├── 📁 try-on
+│   └── page.tsx
+├── globals.css
+├── layout.tsx
+└── page.tsx
+
+📁 components
+├── 📁 ui
+│   ├── FeedbackModal.tsx
+│   ├── FloatingAIHelper.tsx
+│   ├── Navbar.tsx
+│   └── TrendingFashion.tsx
+
+📁 hooks
+└── use-toast.ts
+
+📁 lib
+└── utils.ts
 
 ---
 
