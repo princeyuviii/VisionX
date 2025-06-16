@@ -105,7 +105,7 @@ npm run dev
 
 📚 References & Research
 - HuggingFace Models
--  MediaPipe
+- MediaPipe
 - Aceternity UI
 - Kaggle Datasets: Fashion Product Data
 - Inspiration: Lenskart, Snapchat Filters, Zara Virtual Mirror
@@ -113,9 +113,7 @@ npm run dev
 ---
 
 🏁 Future Plans
-- 👟 Add Shoe Try-On
-- 🧢 Add Hat / Cap overlays
-- 💬 AI Chat Stylist
+- 👟 Daily Reccomendation from your wardrobe
 - 🛍️ Direct Add-to-Cart integrations for Amazon/Flipkart
 - 🧑‍💻 Mobile App version
 
