@@ -56,7 +56,7 @@ VisionX is a **real-time AR-based try-on platform** where users can:
 ---
 
 ## 📂 Project Structure
-
+```
 📁 app
 ├── 📁 community
 │   └── page.tsx
@@ -82,7 +82,7 @@ VisionX is a **real-time AR-based try-on platform** where users can:
 
 📁 lib
 └── utils.ts
-
+```
 ---
 
 ## 💻 How to Run Locally
