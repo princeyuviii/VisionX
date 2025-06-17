@@ -1,14 +1,18 @@
-'use client';
+"use client"
 
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, User, Camera, TrendingUp, ArrowRight, RefreshCw, Heart, Eye, ShoppingBag, Star } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import Link from 'next/link';
+import type React from "react"
+
+import { useState, useRef, useCallback } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import { Sparkles, Camera, Upload, TrendingUp, ArrowRight, RefreshCw, Heart, Eye, Star, X, Check } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Progress } from "@/components/ui/progress"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import Link from "next/link"
+import Image from "next/image"
 
 const latestFashionTrends = [
   {
@@ -24,7 +28,7 @@ const latestFashionTrends = [
     likes: 1240,
     category: "Old Money",
     trending: true,
-    description: "Timeless cashmere blend with sophisticated tailoring"
+    description: "Timeless cashmere blend with sophisticated tailoring",
   },
   {
     id: 2,
@@ -39,7 +43,7 @@ const latestFashionTrends = [
     likes: 890,
     category: "Streetwear",
     trending: true,
-    description: "Bold graphics meet contemporary urban aesthetics"
+    description: "Bold graphics meet contemporary urban aesthetics",
   },
   {
     id: 3,
@@ -54,7 +58,7 @@ const latestFashionTrends = [
     likes: 2150,
     category: "Techcore",
     trending: true,
-    description: "Innovative fabrics with functional design elements"
+    description: "Innovative fabrics with functional design elements",
   },
   {
     id: 4,
@@ -69,7 +73,7 @@ const latestFashionTrends = [
     likes: 1680,
     category: "Bohemian",
     trending: false,
-    description: "Flowing fabrics with artistic patterns and textures"
+    description: "Flowing fabrics with artistic patterns and textures",
   },
   {
     id: 5,
@@ -84,7 +88,7 @@ const latestFashionTrends = [
     likes: 950,
     category: "Minimalist",
     trending: false,
-    description: "Clean cuts with perfect tailoring and premium materials"
+    description: "Clean cuts with perfect tailoring and premium materials",
   },
   {
     id: 6,
@@ -99,130 +103,358 @@ const latestFashionTrends = [
     likes: 1340,
     category: "Vintage",
     trending: true,
-    description: "Classic vintage pieces with modern comfort"
-  }
-];
-
-const fashionRecommendations = [
-  {
-    id: 1,
-    style: "Old Money Elegance",
-    match: 92,
-    description: "Your classic features and sophisticated aura perfectly match timeless elegance",
-    items: [
-      { name: "Cashmere Blazer", price: "$299", image: "https://images.pexels.com/photos/1043473/pexels-photo-1043473.jpeg" },
-      { name: "Pearl Necklace", price: "$149", image: "https://images.pexels.com/photos/1454171/pexels-photo-1454171.jpeg" },
-      { name: "Silk Scarf", price: "$89", image: "https://images.pexels.com/photos/1598505/pexels-photo-1598505.jpeg" }
-    ],
-    colors: ["Cream", "Navy", "Beige", "White"],
-    gradient: "from-amber-100 to-amber-200"
+    description: "Classic vintage pieces with modern comfort",
   },
-  {
-    id: 2,
-    style: "Modern Minimalist",
-    match: 87,
-    description: "Clean lines and subtle sophistication complement your aesthetic",
-    items: [
-      { name: "Structured Coat", price: "$199", image: "https://images.pexels.com/photos/1036622/pexels-photo-1036622.jpeg" },
-      { name: "Minimal Watch", price: "$249", image: "https://images.pexels.com/photos/1697214/pexels-photo-1697214.jpeg" },
-      { name: "Clean Sneakers", price: "$129", image: "https://images.pexels.com/photos/1464625/pexels-photo-1464625.jpeg" }
-    ],
-    colors: ["Black", "White", "Gray", "Charcoal"],
-    gradient: "from-gray-100 to-gray-200"
-  },
-  {
-    id: 3,
-    style: "Bohemian Chic",
-    match: 78,
-    description: "Your creative spirit aligns with free-flowing, artistic fashion",
-    items: [
-      { name: "Flowy Maxi Dress", price: "$159", image: "https://images.pexels.com/photos/1587976/pexels-photo-1587976.jpeg" },
-      { name: "Statement Jewelry", price: "$79", image: "https://images.pexels.com/photos/1454171/pexels-photo-1454171.jpeg" },
-      { name: "Leather Boots", price: "$189", image: "https://images.pexels.com/photos/1464625/pexels-photo-1464625.jpeg" }
-    ],
-    colors: ["Terracotta", "Sage", "Burgundy", "Mustard"],
-    gradient: "from-orange-100 to-red-200"
-  }
-];
+]
 
 const analysisSteps = [
-  { step: 1, title: "Face Analysis", description: "Analyzing facial features and skin tone" },
-  { step: 2, title: "Style Mapping", description: "Matching features to fashion styles" },
-  { step: 3, title: "Trend Analysis", description: "Incorporating current fashion trends" },
-  { step: 4, title: "Personalization", description: "Creating your unique style profile" }
-];
+  { step: 1, title: "Photo Processing", description: "Processing and enhancing your image" },
+  { step: 2, title: "Feature Detection", description: "Analyzing facial features and body type" },
+  { step: 3, title: "Style Analysis", description: "Determining your style preferences" },
+  { step: 4, title: "AI Matching", description: "Finding perfect clothing matches" },
+  { step: 5, title: "Trend Integration", description: "Incorporating latest fashion trends" },
+]
+
+interface RecommendationItem {
+  name: string
+  price: string
+  image: string
+  confidence: number
+  category: string
+}
+
+interface StyleRecommendation {
+  id: number
+  style: string
+  match: number
+  description: string
+  items: RecommendationItem[]
+  colors: string[]
+  gradient: string
+  skinTone: string
+  bodyType: string
+}
 
 export default function RecommendPage() {
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [showResults, setShowResults] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
-  const [progress, setProgress] = useState(0);
-  const [activeTab, setActiveTab] = useState("trending");
-  const [likedItems, setLikedItems] = useState<number[]>([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [showResults, setShowResults] = useState(false)
+  const [currentStep, setCurrentStep] = useState(0)
+  const [progress, setProgress] = useState(0)
+  const [activeTab, setActiveTab] = useState("trending")
+  const [likedItems, setLikedItems] = useState<number[]>([])
+  const [showPhotoDialog, setShowPhotoDialog] = useState(false)
+  const [capturedImage, setCapturedImage] = useState<string | null>(null)
+  const [isUsingCamera, setIsUsingCamera] = useState(false)
+  const [recommendations, setRecommendations] = useState<StyleRecommendation[]>([])
+  const [analysisData, setAnalysisData] = useState<any>(null)
+  const [cameraError, setCameraError] = useState<string | null>(null)
+  const [cameraPermissionStatus, setCameraPermissionStatus] = useState<"unknown" | "granted" | "denied">("unknown")
 
-  const startAnalysis = () => {
-    setIsAnalyzing(true);
-    setShowResults(false);
-    setCurrentStep(0);
-    setProgress(0);
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const streamRef = useRef<MediaStream | null>(null)
 
-    // Simulate analysis process
-    const interval = setInterval(() => {
-      setProgress(prev => {
-        const newProgress = prev + 25;
-        if (newProgress >= 100) {
-          clearInterval(interval);
-          setTimeout(() => {
-            setIsAnalyzing(false);
-            setShowResults(true);
-          }, 500);
-          return 100;
+  const startCamera = useCallback(async () => {
+    try {
+      // Check if getUserMedia is supported
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert(
+          "Camera access is not supported in this browser. Please use a modern browser like Chrome, Firefox, or Safari.",
+        )
+        return
+      }
+
+      // Request camera permission with better error handling
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          facingMode: "user",
+        },
+      })
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream
+        streamRef.current = stream
+        setIsUsingCamera(true)
+      }
+    } catch (error: any) {
+      console.error("Error accessing camera:", error)
+
+      // Handle different types of camera errors
+      let errorMessage = "Unable to access camera. "
+
+      if (error.name === "NotAllowedError" || error.name === "PermissionDeniedError") {
+        errorMessage +=
+          "Please allow camera access in your browser settings and try again.\n\n" +
+          "To enable camera:\n" +
+          "• Click the camera icon in your browser's address bar\n" +
+          "• Select 'Allow' for camera access\n" +
+          "• Refresh the page and try again"
+      } else if (error.name === "NotFoundError" || error.name === "DevicesNotFoundError") {
+        errorMessage += "No camera found on this device. Please connect a camera or use the upload option instead."
+      } else if (error.name === "NotReadableError" || error.name === "TrackStartError") {
+        errorMessage +=
+          "Camera is already in use by another application. Please close other apps using the camera and try again."
+      } else if (error.name === "OverconstrainedError" || error.name === "ConstraintNotSatisfiedError") {
+        errorMessage += "Camera doesn't support the required settings. Trying with basic settings..."
+
+        // Try again with basic settings
+        try {
+          const basicStream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+          })
+
+          if (videoRef.current) {
+            videoRef.current.srcObject = basicStream
+            streamRef.current = basicStream
+            setIsUsingCamera(true)
+            return
+          }
+        } catch (basicError) {
+          errorMessage += "\n\nBasic camera access also failed. Please use the upload option instead."
         }
-        return newProgress;
-      });
+      } else if (error.name === "NotSupportedError") {
+        errorMessage +=
+          "Camera access is not supported in this browser or context. Please use HTTPS or try a different browser."
+      } else {
+        errorMessage += "Please check your camera permissions and try again, or use the upload option instead."
+      }
 
-      setCurrentStep(prev => Math.min(prev + 1, analysisSteps.length - 1));
-    }, 1500);
-  };
+      alert(errorMessage)
+    }
+  }, [])
+
+  const stopCamera = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop())
+      streamRef.current = null
+    }
+    setIsUsingCamera(false)
+  }, [])
+
+  const capturePhoto = useCallback(() => {
+    if (videoRef.current && canvasRef.current) {
+      const canvas = canvasRef.current
+      const video = videoRef.current
+
+      canvas.width = video.videoWidth
+      canvas.height = video.videoHeight
+
+      const ctx = canvas.getContext("2d")
+      if (ctx) {
+        ctx.drawImage(video, 0, 0)
+        const imageData = canvas.toDataURL("image/jpeg", 0.8)
+        setCapturedImage(imageData)
+        stopCamera()
+      }
+    }
+  }, [stopCamera])
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        setCapturedImage(e.target?.result as string)
+        // Don't close dialog, show preview instead
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const analyzePhoto = async (imageData: string) => {
+    setIsAnalyzing(true)
+    setShowResults(false)
+    setCurrentStep(0)
+    setProgress(0)
+    setShowPhotoDialog(false)
+
+    try {
+      // Simulate ML analysis with realistic steps
+      for (let i = 0; i < analysisSteps.length; i++) {
+        await new Promise((resolve) => setTimeout(resolve, 1500))
+        setCurrentStep(i)
+        setProgress(((i + 1) / analysisSteps.length) * 100)
+      }
+
+      // Simulate ML model analysis results
+      const mockAnalysisResult = await simulateMLAnalysis(imageData)
+      setAnalysisData(mockAnalysisResult)
+      setRecommendations(mockAnalysisResult.recommendations)
+
+      setIsAnalyzing(false)
+      setShowResults(true)
+    } catch (error) {
+      console.error("Analysis failed:", error)
+      setIsAnalyzing(false)
+      alert("Analysis failed. Please try again.")
+    }
+  }
+
+  const simulateMLAnalysis = async (imageData: string): Promise<any> => {
+    // This would be replaced with actual ML model calls
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({
+          skinTone: "warm",
+          bodyType: "athletic",
+          faceShape: "oval",
+          colorPalette: ["warm", "earth-tones"],
+          stylePreference: "modern-casual",
+          recommendations: [
+            {
+              id: 1,
+              style: "Smart Casual Elegance",
+              match: 94,
+              description: "Your features and proportions are perfect for sophisticated casual wear with clean lines",
+              skinTone: "Warm undertones detected",
+              bodyType: "Athletic build - structured pieces recommended",
+              items: [
+                {
+                  name: "Tailored Blazer",
+                  price: "$249",
+                  image: "https://images.pexels.com/photos/1043473/pexels-photo-1043473.jpeg",
+                  confidence: 0.92,
+                  category: "Outerwear",
+                },
+                {
+                  name: "Crisp White Shirt",
+                  price: "$89",
+                  image: "https://images.pexels.com/photos/1036622/pexels-photo-1036622.jpeg",
+                  confidence: 0.89,
+                  category: "Tops",
+                },
+                {
+                  name: "Dark Wash Jeans",
+                  price: "$129",
+                  image: "https://images.pexels.com/photos/1021693/pexels-photo-1021693.jpeg",
+                  confidence: 0.87,
+                  category: "Bottoms",
+                },
+              ],
+              colors: ["Navy", "White", "Charcoal", "Camel"],
+              gradient: "from-blue-100 to-blue-200",
+            },
+            {
+              id: 2,
+              style: "Contemporary Minimalist",
+              match: 88,
+              description: "Clean, modern aesthetics that complement your natural features",
+              skinTone: "Cool tones will enhance your complexion",
+              bodyType: "Streamlined silhouettes recommended",
+              items: [
+                {
+                  name: "Minimalist Sweater",
+                  price: "$159",
+                  image: "https://images.pexels.com/photos/1040945/pexels-photo-1040945.jpeg",
+                  confidence: 0.85,
+                  category: "Knitwear",
+                },
+                {
+                  name: "Straight Leg Trousers",
+                  price: "$119",
+                  image: "https://images.pexels.com/photos/1587976/pexels-photo-1587976.jpeg",
+                  confidence: 0.83,
+                  category: "Bottoms",
+                },
+                {
+                  name: "Leather Sneakers",
+                  price: "$189",
+                  image: "https://images.pexels.com/photos/1464625/pexels-photo-1464625.jpeg",
+                  confidence: 0.81,
+                  category: "Footwear",
+                },
+              ],
+              colors: ["Black", "White", "Gray", "Beige"],
+              gradient: "from-gray-100 to-gray-200",
+            },
+            {
+              id: 3,
+              style: "Urban Chic",
+              match: 82,
+              description: "Modern street style with sophisticated touches",
+              skinTone: "Bold colors will work well with your complexion",
+              bodyType: "Relaxed fits with structured elements",
+              items: [
+                {
+                  name: "Oversized Jacket",
+                  price: "$199",
+                  image: "https://images.pexels.com/photos/1454171/pexels-photo-1454171.jpeg",
+                  confidence: 0.79,
+                  category: "Outerwear",
+                },
+                {
+                  name: "Graphic Tee",
+                  price: "$49",
+                  image: "https://images.pexels.com/photos/1598505/pexels-photo-1598505.jpeg",
+                  confidence: 0.77,
+                  category: "Tops",
+                },
+                {
+                  name: "Cargo Pants",
+                  price: "$139",
+                  image: "https://images.pexels.com/photos/1697214/pexels-photo-1697214.jpeg",
+                  confidence: 0.75,
+                  category: "Bottoms",
+                },
+              ],
+              colors: ["Olive", "Black", "White", "Burgundy"],
+              gradient: "from-green-100 to-yellow-200",
+            },
+          ],
+        })
+      }, 500)
+    })
+  }
 
   const resetAnalysis = () => {
-    setShowResults(false);
-    setIsAnalyzing(false);
-    setProgress(0);
-    setCurrentStep(0);
-  };
+    setShowResults(false)
+    setIsAnalyzing(false)
+    setProgress(0)
+    setCurrentStep(0)
+    setCapturedImage(null)
+    setRecommendations([])
+    setAnalysisData(null)
+  }
 
   const toggleLike = (itemId: number) => {
-    setLikedItems(prev => 
-      prev.includes(itemId) 
-        ? prev.filter(id => id !== itemId)
-        : [...prev, itemId]
-    );
-  };
+    setLikedItems((prev) => (prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId]))
+  }
 
-  const trendingItems = latestFashionTrends.filter(item => item.trending);
-  const allItems = latestFashionTrends;
+  const trendingItems = latestFashionTrends.filter((item) => item.trending)
+  const allItems = latestFashionTrends
+
+  const checkCameraPermissions = useCallback(async () => {
+    try {
+      if (!navigator.permissions) {
+        return "unknown"
+      }
+
+      const permission = await navigator.permissions.query({ name: "camera" as PermissionName })
+      setCameraPermissionStatus(permission.state as "granted" | "denied")
+      return permission.state
+    } catch (error) {
+      console.log("Permission check not supported")
+      return "unknown"
+    }
+  }, [])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 pt-20 pb-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
-        >
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-            AI Fashion Recommender
-          </h1>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">AI Fashion Recommender</h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Discover your perfect style with our advanced AI analysis and explore the latest fashion trends.
+            Upload your photo or take a live picture to get personalized fashion recommendations powered by advanced AI.
           </p>
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
-            {/* Analysis Section */}
+            {/* Photo Input Section */}
             {!isAnalyzing && !showResults && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -231,26 +463,75 @@ export default function RecommendPage() {
               >
                 <Card className="max-w-md mx-auto shadow-xl border-0 bg-gradient-to-br from-purple-500 to-pink-500 text-white">
                   <CardContent className="p-8">
-                    <motion.div
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="space-y-4"
-                    >
+                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="space-y-4">
                       <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto">
-                        <User className="h-10 w-10" />
+                        <Camera className="h-10 w-10" />
                       </div>
-                      <h3 className="text-2xl font-bold">Analyze My Style</h3>
+                      <h3 className="text-2xl font-bold">Get Your Style Analysis</h3>
                       <p className="text-purple-100">
-                        Our AI will analyze your features and recommend the perfect fashion styles for you
+                        Upload a photo or take a live picture to receive AI-powered fashion recommendations
                       </p>
-                      <Button
-                        onClick={startAnalysis}
-                        size="lg"
-                        className="bg-white text-purple-600 hover:bg-gray-100 font-semibold px-8 py-3 rounded-full w-full"
-                      >
-                        <Sparkles className="mr-2 h-5 w-5" />
-                        Start Analysis
-                      </Button>
+
+                      {capturedImage && (
+                        <div className="relative w-40 h-40 mx-auto rounded-lg overflow-hidden border-2 border-white/30">
+                          <Image
+                            src={capturedImage || "/placeholder.svg"}
+                            alt="Captured"
+                            fill
+                            className="object-cover"
+                          />
+                          <button
+                            onClick={() => setCapturedImage(null)}
+                            className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      )}
+
+                      <div className="space-y-3">
+                        {!capturedImage ? (
+                          <Button
+                            onClick={() => setShowPhotoDialog(true)}
+                            size="lg"
+                            className="bg-white text-purple-600 hover:bg-gray-100 font-semibold px-8 py-3 rounded-full w-full"
+                          >
+                            <Camera className="mr-2 h-5 w-5" />
+                            Take Photo / Upload
+                          </Button>
+                        ) : (
+                          <>
+                            <Button
+                              onClick={() => analyzePhoto(capturedImage)}
+                              size="lg"
+                              className="bg-white text-purple-600 hover:bg-gray-100 font-semibold px-8 py-3 rounded-full w-full"
+                            >
+                              <Sparkles className="mr-2 h-5 w-5" />
+                              Analyze My Style
+                            </Button>
+                            <div className="flex space-x-2">
+                              <Button
+                                onClick={() => setShowPhotoDialog(true)}
+                                size="sm"
+                                variant="outline"
+                                className="bg-transparent border-white/30 text-white hover:bg-white/10 flex-1"
+                              >
+                                <RefreshCw className="mr-2 h-4 w-4" />
+                                Retake
+                              </Button>
+                              <Button
+                                onClick={() => setCapturedImage(null)}
+                                size="sm"
+                                variant="outline"
+                                className="bg-transparent border-white/30 text-white hover:bg-white/10 flex-1"
+                              >
+                                <X className="mr-2 h-4 w-4" />
+                                Remove
+                              </Button>
+                            </div>
+                          </>
+                        )}
+                      </div>
                     </motion.div>
                   </CardContent>
                 </Card>
@@ -267,45 +548,53 @@ export default function RecommendPage() {
                 >
                   <Card className="max-w-2xl mx-auto shadow-xl border-0 bg-white/80 backdrop-blur-sm">
                     <CardHeader>
-                      <CardTitle className="text-center text-2xl">Analyzing Your Style...</CardTitle>
+                      <CardTitle className="text-center text-2xl">Analyzing Your Photo...</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-6">
                       <div className="text-center">
                         <motion.div
                           animate={{ rotate: 360 }}
-                          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                          transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
                           className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full mx-auto mb-4"
                         />
-                        <p className="text-lg font-medium text-gray-700">
-                          {analysisSteps[currentStep]?.title}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          {analysisSteps[currentStep]?.description}
-                        </p>
+                        <p className="text-lg font-medium text-gray-700">{analysisSteps[currentStep]?.title}</p>
+                        <p className="text-sm text-gray-500">{analysisSteps[currentStep]?.description}</p>
                       </div>
-                      
+
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
                           <span>Progress</span>
-                          <span>{progress}%</span>
+                          <span>{Math.round(progress)}%</span>
                         </div>
                         <Progress value={progress} className="h-2" />
                       </div>
 
-                      <div className="grid grid-cols-4 gap-4">
+                      <div className="grid grid-cols-5 gap-2">
                         {analysisSteps.map((step, index) => (
                           <div
                             key={step.step}
-                            className={`text-center p-3 rounded-lg transition-colors ${
-                              index <= currentStep
-                                ? 'bg-purple-100 text-purple-700'
-                                : 'bg-gray-100 text-gray-400'
+                            className={`text-center p-2 rounded-lg transition-colors ${
+                              index <= currentStep ? "bg-purple-100 text-purple-700" : "bg-gray-100 text-gray-400"
                             }`}
                           >
                             <div className="text-xs font-medium">{step.title}</div>
                           </div>
                         ))}
                       </div>
+
+                      {capturedImage && (
+                        <div className="flex justify-center">
+                          <div className="w-24 h-24 rounded-lg overflow-hidden border-2 border-purple-200">
+                            <Image
+                              src={capturedImage || "/placeholder.svg"}
+                              alt="Analyzing"
+                              width={96}
+                              height={96}
+                              className="object-cover w-full h-full"
+                            />
+                          </div>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 </motion.div>
@@ -314,12 +603,8 @@ export default function RecommendPage() {
 
             {/* Results */}
             <AnimatePresence>
-              {showResults && (
-                <motion.div
-                  initial={{ opacity: 0, y: 40 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="space-y-8"
-                >
+              {showResults && recommendations.length > 0 && (
+                <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
                   <div className="text-center">
                     <motion.div
                       initial={{ scale: 0 }}
@@ -327,33 +612,56 @@ export default function RecommendPage() {
                       transition={{ delay: 0.2, duration: 0.5, ease: "backOut" }}
                       className="inline-flex items-center px-4 py-2 bg-green-100 text-green-700 rounded-full text-sm font-medium mb-4"
                     >
-                      <Sparkles className="h-4 w-4 mr-2" />
-                      Analysis Complete!
+                      <Check className="h-4 w-4 mr-2" />
+                      AI Analysis Complete!
                     </motion.div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                      Your Personalized Style Recommendations
-                    </h2>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Your Personalized Style Recommendations</h2>
                     <p className="text-gray-600 mb-6">
-                      Based on our AI analysis, here are the styles that suit you best
+                      Based on our advanced AI analysis of your photo, here are the styles that suit you best
                     </p>
-                    
+
                     <div className="flex justify-center space-x-4">
                       <Button onClick={resetAnalysis} variant="outline">
                         <RefreshCw className="mr-2 h-4 w-4" />
-                        Re-analyze
+                        Try Another Photo
                       </Button>
                     </div>
                   </div>
 
+                  {/* Analysis Summary */}
+                  {analysisData && (
+                    <Card className="bg-gradient-to-r from-indigo-50 to-purple-50 border-0">
+                      <CardContent className="p-6">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">AI Analysis Summary</h3>
+                        <div className="grid md:grid-cols-3 gap-4 text-sm">
+                          <div>
+                            <span className="font-medium text-gray-700">Skin Tone:</span>
+                            <p className="text-gray-600 capitalize">{analysisData.skinTone} undertones</p>
+                          </div>
+                          <div>
+                            <span className="font-medium text-gray-700">Body Type:</span>
+                            <p className="text-gray-600 capitalize">{analysisData.bodyType}</p>
+                          </div>
+                          <div>
+                            <span className="font-medium text-gray-700">Face Shape:</span>
+                            <p className="text-gray-600 capitalize">{analysisData.faceShape}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
                   <div className="grid gap-6">
-                    {fashionRecommendations.map((recommendation, index) => (
+                    {recommendations.map((recommendation, index) => (
                       <motion.div
                         key={recommendation.id}
                         initial={{ opacity: 0, y: 40 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.1 }}
                       >
-                        <Card className={`shadow-lg border-0 bg-gradient-to-r ${recommendation.gradient} overflow-hidden`}>
+                        <Card
+                          className={`shadow-lg border-0 bg-gradient-to-r ${recommendation.gradient} overflow-hidden`}
+                        >
                           <CardContent className="p-0">
                             <div className="grid md:grid-cols-3 gap-6 p-6">
                               {/* Style Info */}
@@ -364,14 +672,19 @@ export default function RecommendPage() {
                                   </Badge>
                                   <TrendingUp className="h-5 w-5 text-gray-600" />
                                 </div>
-                                
+
                                 <div>
-                                  <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                                    {recommendation.style}
-                                  </h3>
-                                  <p className="text-gray-700 text-sm">
-                                    {recommendation.description}
-                                  </p>
+                                  <h3 className="text-2xl font-bold text-gray-900 mb-2">{recommendation.style}</h3>
+                                  <p className="text-gray-700 text-sm mb-3">{recommendation.description}</p>
+
+                                  <div className="space-y-2 text-xs">
+                                    <p>
+                                      <span className="font-medium">Skin Tone:</span> {recommendation.skinTone}
+                                    </p>
+                                    <p>
+                                      <span className="font-medium">Body Type:</span> {recommendation.bodyType}
+                                    </p>
+                                  </div>
                                 </div>
 
                                 <div>
@@ -395,7 +708,7 @@ export default function RecommendPage() {
 
                               {/* Recommended Items */}
                               <div className="md:col-span-2">
-                                <h4 className="font-semibold text-gray-900 mb-4">Recommended Items:</h4>
+                                <h4 className="font-semibold text-gray-900 mb-4">AI Recommended Items:</h4>
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                   {recommendation.items.map((item) => (
                                     <motion.div
@@ -404,14 +717,23 @@ export default function RecommendPage() {
                                       className="bg-white/60 backdrop-blur-sm rounded-lg p-4 text-center space-y-2"
                                     >
                                       <div className="w-full h-24 bg-gray-200 rounded-lg mb-2 overflow-hidden">
-                                        <img 
-                                          src={item.image} 
+                                        <img
+                                          src={item.image || "/placeholder.svg"}
                                           alt={item.name}
                                           className="w-full h-full object-cover"
                                         />
                                       </div>
                                       <h5 className="font-medium text-sm text-gray-900">{item.name}</h5>
                                       <p className="text-purple-600 font-semibold text-sm">{item.price}</p>
+                                      <div className="flex items-center justify-center space-x-1">
+                                        <Star className="h-3 w-3 text-yellow-400 fill-current" />
+                                        <span className="text-xs text-gray-600">
+                                          {Math.round(item.confidence * 100)}% match
+                                        </span>
+                                      </div>
+                                      <Badge variant="outline" className="text-xs">
+                                        {item.category}
+                                      </Badge>
                                     </motion.div>
                                   ))}
                                 </div>
@@ -442,7 +764,7 @@ export default function RecommendPage() {
                     <TabsTrigger value="trending">Trending</TabsTrigger>
                     <TabsTrigger value="all">All Items</TabsTrigger>
                   </TabsList>
-                  
+
                   <TabsContent value="trending" className="space-y-4">
                     {trendingItems.map((item, index) => (
                       <motion.div
@@ -454,8 +776,8 @@ export default function RecommendPage() {
                       >
                         <div className="flex space-x-3">
                           <div className="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
-                            <img 
-                              src={item.image} 
+                            <img
+                              src={item.image || "/placeholder.svg"}
                               alt={item.title}
                               className="w-full h-full object-cover"
                             />
@@ -475,7 +797,9 @@ export default function RecommendPage() {
                                 onClick={() => toggleLike(item.id)}
                                 className="text-gray-400 hover:text-red-500 transition-colors"
                               >
-                                <Heart className={`h-4 w-4 ${likedItems.includes(item.id) ? 'fill-red-500 text-red-500' : ''}`} />
+                                <Heart
+                                  className={`h-4 w-4 ${likedItems.includes(item.id) ? "fill-red-500 text-red-500" : ""}`}
+                                />
                               </button>
                             </div>
                             <div className="flex items-center justify-between mt-2">
@@ -503,7 +827,7 @@ export default function RecommendPage() {
                       </motion.div>
                     ))}
                   </TabsContent>
-                  
+
                   <TabsContent value="all" className="space-y-4">
                     {allItems.map((item, index) => (
                       <motion.div
@@ -515,8 +839,8 @@ export default function RecommendPage() {
                       >
                         <div className="flex space-x-3">
                           <div className="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
-                            <img 
-                              src={item.image} 
+                            <img
+                              src={item.image || "/placeholder.svg"}
                               alt={item.title}
                               className="w-full h-full object-cover"
                             />
@@ -536,7 +860,9 @@ export default function RecommendPage() {
                                 onClick={() => toggleLike(item.id)}
                                 className="text-gray-400 hover:text-red-500 transition-colors"
                               >
-                                <Heart className={`h-4 w-4 ${likedItems.includes(item.id) ? 'fill-red-500 text-red-500' : ''}`} />
+                                <Heart
+                                  className={`h-4 w-4 ${likedItems.includes(item.id) ? "fill-red-500 text-red-500" : ""}`}
+                                />
                               </button>
                             </div>
                             <div className="flex items-center justify-between mt-2">
@@ -569,7 +895,189 @@ export default function RecommendPage() {
             </Card>
           </div>
         </div>
+
+        {/* Photo Input Dialog */}
+        <Dialog open={showPhotoDialog} onOpenChange={setShowPhotoDialog}>
+          <DialogContent className="max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>
+                {!isUsingCamera && !capturedImage
+                  ? "Choose Photo Input Method"
+                  : isUsingCamera
+                    ? "Take Your Photo"
+                    : "Photo Preview"}
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-6">
+              {!isUsingCamera && !capturedImage ? (
+                // Initial choice screen
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Card
+                      className="cursor-pointer hover:shadow-md transition-shadow"
+                      onClick={async () => {
+                        setCameraError(null)
+                        await checkCameraPermissions()
+                        startCamera()
+                      }}
+                    >
+                      <CardContent className="p-6 text-center">
+                        <Camera className="h-12 w-12 mx-auto mb-4 text-purple-600" />
+                        <h3 className="font-semibold mb-2">Take Live Photo</h3>
+                        <p className="text-sm text-gray-600">Use your camera to take a photo</p>
+                        {cameraPermissionStatus === "denied" && (
+                          <p className="text-xs text-red-500 mt-2">Camera access denied. Check browser settings.</p>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    <Card
+                      className="cursor-pointer hover:shadow-md transition-shadow"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <CardContent className="p-6 text-center">
+                        <Upload className="h-12 w-12 mx-auto mb-4 text-purple-600" />
+                        <h3 className="font-semibold mb-2">Upload Photo</h3>
+                        <p className="text-sm text-gray-600">Choose from your device</p>
+                        <p className="text-xs text-green-600 mt-2">Recommended if camera issues occur</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Camera permission help */}
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h4 className="font-medium text-blue-900 mb-2">Camera Access Help</h4>
+                    <div className="text-sm text-blue-700 space-y-1">
+                      <p>• Make sure you're using HTTPS (secure connection)</p>
+                      <p>• Allow camera permissions when prompted</p>
+                      <p>• Close other apps that might be using your camera</p>
+                      <p>• Try refreshing the page if camera doesn't work</p>
+                    </div>
+                  </div>
+                </div>
+              ) : isUsingCamera && !capturedImage ? (
+                // Camera interface with better error handling
+                <div className="space-y-4">
+                  <div className="relative bg-black rounded-lg overflow-hidden">
+                    <video ref={videoRef} autoPlay playsInline className="w-full h-auto max-h-96 object-cover" />
+                    <canvas ref={canvasRef} className="hidden" />
+
+                    {/* Camera overlay for better UX */}
+                    <div className="absolute inset-0 pointer-events-none">
+                      <div className="absolute top-4 left-4 right-4">
+                        <div className="bg-black/50 text-white px-3 py-2 rounded-lg text-sm text-center">
+                          Position yourself in the frame and click capture
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Camera Controls */}
+                  <div className="flex justify-center space-x-4">
+                    <Button
+                      onClick={capturePhoto}
+                      size="lg"
+                      className="bg-purple-600 hover:bg-purple-700 text-white px-8"
+                    >
+                      <Camera className="mr-2 h-5 w-5" />
+                      Capture Photo
+                    </Button>
+                    <Button onClick={stopCamera} variant="outline" size="lg" className="px-8">
+                      <X className="mr-2 h-4 w-4" />
+                      Cancel
+                    </Button>
+                  </div>
+
+                  {/* Troubleshooting help */}
+                  <div className="text-center">
+                    <p className="text-sm text-gray-600 mb-2">Camera not working?</p>
+                    <Button
+                      onClick={() => {
+                        stopCamera()
+                        setCapturedImage(null)
+                      }}
+                      variant="link"
+                      className="text-purple-600 text-sm"
+                    >
+                      Try uploading a photo instead
+                    </Button>
+                  </div>
+                </div>
+              ) : capturedImage ? (
+                // Photo preview interface
+                <div className="space-y-4">
+                  <div className="relative">
+                    <div className="bg-gray-100 rounded-lg overflow-hidden">
+                      <Image
+                        src={capturedImage || "/placeholder.svg"}
+                        alt="Captured photo"
+                        width={600}
+                        height={400}
+                        className="w-full h-auto max-h-96 object-cover mx-auto"
+                      />
+                    </div>
+
+                    {/* Preview overlay */}
+                    <div className="absolute top-4 left-4 right-4">
+                      <div className="bg-green-500 text-white px-3 py-2 rounded-lg text-sm text-center">
+                        ✓ Photo captured successfully! Ready for analysis.
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Preview Controls */}
+                  <div className="flex justify-center space-x-3">
+                    <Button
+                      onClick={() => {
+                        analyzePhoto(capturedImage)
+                      }}
+                      size="lg"
+                      className="bg-purple-600 hover:bg-purple-700 text-white px-8"
+                    >
+                      <Sparkles className="mr-2 h-5 w-5" />
+                      Analyze My Style
+                    </Button>
+
+                    <Button
+                      onClick={() => {
+                        setCapturedImage(null)
+                        startCamera()
+                      }}
+                      variant="outline"
+                      size="lg"
+                      className="px-6"
+                    >
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      Retake
+                    </Button>
+
+                    <Button
+                      onClick={() => {
+                        setCapturedImage(null)
+                        setShowPhotoDialog(false)
+                      }}
+                      variant="outline"
+                      size="lg"
+                      className="px-6"
+                    >
+                      <X className="mr-2 h-4 w-4" />
+                      Cancel
+                    </Button>
+                  </div>
+
+                  {/* Photo info */}
+                  <div className="text-center text-sm text-gray-600">
+                    <p>Make sure your face is clearly visible and well-lit for best results</p>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+
+            <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
-  );
+  )
 }
