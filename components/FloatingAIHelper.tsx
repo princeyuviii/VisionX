@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { sendToGemini } from '@/lib/gemini';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, X, Sparkles, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -18,7 +19,7 @@ const FloatingAIHelper = () => {
     }
   ]);
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!message.trim()) return;
 
     const newMessage = {
@@ -30,15 +31,23 @@ const FloatingAIHelper = () => {
     setMessages(prev => [...prev, newMessage]);
     setMessage('');
 
-    // Simulate AI response
-    setTimeout(() => {
+    try {
+      const aiText = await sendToGemini("Suggest 3 fashion style for beach");
+
       const aiResponse = {
         id: messages.length + 2,
-        text: "That's a great question! Based on your interest, I'd recommend trying our virtual try-on feature. You can explore different styles like Old Money elegance, Streetwear, or Techcore. Would you like me to guide you to a specific category?",
+        text: aiText,
         isAI: true
       };
+
       setMessages(prev => [...prev, aiResponse]);
-    }, 1000);
+    } catch (error) {
+      setMessages(prev => [...prev, {
+        id: messages.length + 2,
+        text: '⚠️ Error talking to AI. Please try again later.',
+        isAI: true
+      }]);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

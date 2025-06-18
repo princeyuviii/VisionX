@@ -4,7 +4,21 @@ import type React from "react"
 
 import { useState, useRef, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Sparkles, Camera, Upload, TrendingUp, ArrowRight, RefreshCw, Heart, Eye, Star, X, Check } from "lucide-react"
+import {
+  Sparkles,
+  Camera,
+  Upload,
+  TrendingUp,
+  ArrowRight,
+  RefreshCw,
+  Heart,
+  Eye,
+  Star,
+  X,
+  Check,
+  Wifi,
+  WifiOff,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -109,10 +123,10 @@ const latestFashionTrends = [
 
 const analysisSteps = [
   { step: 1, title: "Photo Processing", description: "Processing and enhancing your image" },
-  { step: 2, title: "Feature Detection", description: "Analyzing facial features and body type" },
-  { step: 3, title: "Style Analysis", description: "Determining your style preferences" },
-  { step: 4, title: "AI Matching", description: "Finding perfect clothing matches" },
-  { step: 5, title: "Trend Integration", description: "Incorporating latest fashion trends" },
+  { step: 2, title: "Face Shape Analysis", description: "Analyzing facial features using AI" },
+  { step: 3, title: "Body Measurements", description: "Detecting pose and body proportions" },
+  { step: 4, title: "Skin Tone Detection", description: "Analyzing skin tone and undertones" },
+  { step: 5, title: "Style Matching", description: "Generating personalized recommendations" },
 ]
 
 interface RecommendationItem {
@@ -147,8 +161,7 @@ export default function RecommendPage() {
   const [isUsingCamera, setIsUsingCamera] = useState(false)
   const [recommendations, setRecommendations] = useState<StyleRecommendation[]>([])
   const [analysisData, setAnalysisData] = useState<any>(null)
-  const [cameraError, setCameraError] = useState<string | null>(null)
-  const [cameraPermissionStatus, setCameraPermissionStatus] = useState<"unknown" | "granted" | "denied">("unknown")
+  const [mlServerStatus, setMlServerStatus] = useState<"unknown" | "online" | "offline">("unknown")
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -157,7 +170,6 @@ export default function RecommendPage() {
 
   const startCamera = useCallback(async () => {
     try {
-      // Check if getUserMedia is supported
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         alert(
           "Camera access is not supported in this browser. Please use a modern browser like Chrome, Firefox, or Safari.",
@@ -165,7 +177,6 @@ export default function RecommendPage() {
         return
       }
 
-      // Request camera permission with better error handling
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           width: { ideal: 1280 },
@@ -182,7 +193,6 @@ export default function RecommendPage() {
     } catch (error: any) {
       console.error("Error accessing camera:", error)
 
-      // Handle different types of camera errors
       let errorMessage = "Unable to access camera. "
 
       if (error.name === "NotAllowedError" || error.name === "PermissionDeniedError") {
@@ -200,7 +210,6 @@ export default function RecommendPage() {
       } else if (error.name === "OverconstrainedError" || error.name === "ConstraintNotSatisfiedError") {
         errorMessage += "Camera doesn't support the required settings. Trying with basic settings..."
 
-        // Try again with basic settings
         try {
           const basicStream = await navigator.mediaDevices.getUserMedia({
             video: true,
@@ -258,7 +267,6 @@ export default function RecommendPage() {
       const reader = new FileReader()
       reader.onload = (e) => {
         setCapturedImage(e.target?.result as string)
-        // Don't close dialog, show preview instead
       }
       reader.readAsDataURL(file)
     }
@@ -272,141 +280,45 @@ export default function RecommendPage() {
     setShowPhotoDialog(false)
 
     try {
-      // Simulate ML analysis with realistic steps
-      for (let i = 0; i < analysisSteps.length; i++) {
-        await new Promise((resolve) => setTimeout(resolve, 1500))
-        setCurrentStep(i)
-        setProgress(((i + 1) / analysisSteps.length) * 100)
+      // Call your actual ML API
+      const response = await fetch("/api/analyze-fashion", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ imageData }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`Analysis failed: ${response.statusText}`)
       }
 
-      // Simulate ML model analysis results
-      const mockAnalysisResult = await simulateMLAnalysis(imageData)
-      setAnalysisData(mockAnalysisResult)
-      setRecommendations(mockAnalysisResult.recommendations)
+      const result = await response.json()
+
+      if (!result.success) {
+        throw new Error(result.error || "Analysis failed")
+      }
+
+      // Update progress through analysis steps
+      for (let i = 0; i < analysisSteps.length; i++) {
+        setCurrentStep(i)
+        setProgress(((i + 1) / analysisSteps.length) * 100)
+        await new Promise((resolve) => setTimeout(resolve, 800))
+      }
+
+      setMlServerStatus(result.mlServerStatus || "unknown")
+      setAnalysisData(result.analysis)
+      setRecommendations(result.analysis.recommendations)
 
       setIsAnalyzing(false)
       setShowResults(true)
     } catch (error) {
       console.error("Analysis failed:", error)
       setIsAnalyzing(false)
-      alert("Analysis failed. Please try again.")
+      alert(
+        `Analysis failed: ${error instanceof Error ? error.message : "Unknown error"}. Please make sure the ML server is running.`,
+      )
     }
-  }
-
-  const simulateMLAnalysis = async (imageData: string): Promise<any> => {
-    // This would be replaced with actual ML model calls
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({
-          skinTone: "warm",
-          bodyType: "athletic",
-          faceShape: "oval",
-          colorPalette: ["warm", "earth-tones"],
-          stylePreference: "modern-casual",
-          recommendations: [
-            {
-              id: 1,
-              style: "Smart Casual Elegance",
-              match: 94,
-              description: "Your features and proportions are perfect for sophisticated casual wear with clean lines",
-              skinTone: "Warm undertones detected",
-              bodyType: "Athletic build - structured pieces recommended",
-              items: [
-                {
-                  name: "Tailored Blazer",
-                  price: "$249",
-                  image: "https://images.pexels.com/photos/1043473/pexels-photo-1043473.jpeg",
-                  confidence: 0.92,
-                  category: "Outerwear",
-                },
-                {
-                  name: "Crisp White Shirt",
-                  price: "$89",
-                  image: "https://images.pexels.com/photos/1036622/pexels-photo-1036622.jpeg",
-                  confidence: 0.89,
-                  category: "Tops",
-                },
-                {
-                  name: "Dark Wash Jeans",
-                  price: "$129",
-                  image: "https://images.pexels.com/photos/1021693/pexels-photo-1021693.jpeg",
-                  confidence: 0.87,
-                  category: "Bottoms",
-                },
-              ],
-              colors: ["Navy", "White", "Charcoal", "Camel"],
-              gradient: "from-blue-100 to-blue-200",
-            },
-            {
-              id: 2,
-              style: "Contemporary Minimalist",
-              match: 88,
-              description: "Clean, modern aesthetics that complement your natural features",
-              skinTone: "Cool tones will enhance your complexion",
-              bodyType: "Streamlined silhouettes recommended",
-              items: [
-                {
-                  name: "Minimalist Sweater",
-                  price: "$159",
-                  image: "https://images.pexels.com/photos/1040945/pexels-photo-1040945.jpeg",
-                  confidence: 0.85,
-                  category: "Knitwear",
-                },
-                {
-                  name: "Straight Leg Trousers",
-                  price: "$119",
-                  image: "https://images.pexels.com/photos/1587976/pexels-photo-1587976.jpeg",
-                  confidence: 0.83,
-                  category: "Bottoms",
-                },
-                {
-                  name: "Leather Sneakers",
-                  price: "$189",
-                  image: "https://images.pexels.com/photos/1464625/pexels-photo-1464625.jpeg",
-                  confidence: 0.81,
-                  category: "Footwear",
-                },
-              ],
-              colors: ["Black", "White", "Gray", "Beige"],
-              gradient: "from-gray-100 to-gray-200",
-            },
-            {
-              id: 3,
-              style: "Urban Chic",
-              match: 82,
-              description: "Modern street style with sophisticated touches",
-              skinTone: "Bold colors will work well with your complexion",
-              bodyType: "Relaxed fits with structured elements",
-              items: [
-                {
-                  name: "Oversized Jacket",
-                  price: "$199",
-                  image: "https://images.pexels.com/photos/1454171/pexels-photo-1454171.jpeg",
-                  confidence: 0.79,
-                  category: "Outerwear",
-                },
-                {
-                  name: "Graphic Tee",
-                  price: "$49",
-                  image: "https://images.pexels.com/photos/1598505/pexels-photo-1598505.jpeg",
-                  confidence: 0.77,
-                  category: "Tops",
-                },
-                {
-                  name: "Cargo Pants",
-                  price: "$139",
-                  image: "https://images.pexels.com/photos/1697214/pexels-photo-1697214.jpeg",
-                  confidence: 0.75,
-                  category: "Bottoms",
-                },
-              ],
-              colors: ["Olive", "Black", "White", "Burgundy"],
-              gradient: "from-green-100 to-yellow-200",
-            },
-          ],
-        })
-      }, 500)
-    })
   }
 
   const resetAnalysis = () => {
@@ -426,28 +338,25 @@ export default function RecommendPage() {
   const trendingItems = latestFashionTrends.filter((item) => item.trending)
   const allItems = latestFashionTrends
 
-  const checkCameraPermissions = useCallback(async () => {
-    try {
-      if (!navigator.permissions) {
-        return "unknown"
-      }
-
-      const permission = await navigator.permissions.query({ name: "camera" as PermissionName })
-      setCameraPermissionStatus(permission.state as "granted" | "denied")
-      return permission.state
-    } catch (error) {
-      console.log("Permission check not supported")
-      return "unknown"
-    }
-  }, [])
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 pt-20 pb-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">AI Fashion Recommender</h1>
+          <div className="flex items-center justify-center mb-4">
+            <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mr-4">AI Fashion Recommender</h1>
+            {mlServerStatus !== "unknown" && (
+              <div
+                className={`flex items-center px-3 py-1 rounded-full text-sm ${
+                  mlServerStatus === "online" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                }`}
+              >
+                {mlServerStatus === "online" ? <Wifi className="h-4 w-4 mr-1" /> : <WifiOff className="h-4 w-4 mr-1" />}
+                ML Server {mlServerStatus}
+              </div>
+            )}
+          </div>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Upload your photo or take a live picture to get personalized fashion recommendations powered by advanced AI.
+            Upload your photo to get personalized fashion recommendations powered by advanced AI models.
           </p>
         </motion.div>
 
@@ -548,7 +457,7 @@ export default function RecommendPage() {
                 >
                   <Card className="max-w-2xl mx-auto shadow-xl border-0 bg-white/80 backdrop-blur-sm">
                     <CardHeader>
-                      <CardTitle className="text-center text-2xl">Analyzing Your Photo...</CardTitle>
+                      <CardTitle className="text-center text-2xl">Analyzing Your Photo with AI...</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-6">
                       <div className="text-center">
@@ -635,16 +544,16 @@ export default function RecommendPage() {
                         <h3 className="text-lg font-semibold text-gray-900 mb-4">AI Analysis Summary</h3>
                         <div className="grid md:grid-cols-3 gap-4 text-sm">
                           <div>
-                            <span className="font-medium text-gray-700">Skin Tone:</span>
-                            <p className="text-gray-600 capitalize">{analysisData.skinTone} undertones</p>
+                            <span className="font-medium text-gray-700">Face Shape:</span>
+                            <p className="text-gray-600 capitalize">{analysisData.faceShape}</p>
                           </div>
                           <div>
                             <span className="font-medium text-gray-700">Body Type:</span>
                             <p className="text-gray-600 capitalize">{analysisData.bodyType}</p>
                           </div>
                           <div>
-                            <span className="font-medium text-gray-700">Face Shape:</span>
-                            <p className="text-gray-600 capitalize">{analysisData.faceShape}</p>
+                            <span className="font-medium text-gray-700">Skin Tone:</span>
+                            <p className="text-gray-600 capitalize">{analysisData.skinTone}</p>
                           </div>
                         </div>
                       </CardContent>
@@ -679,7 +588,7 @@ export default function RecommendPage() {
 
                                   <div className="space-y-2 text-xs">
                                     <p>
-                                      <span className="font-medium">Skin Tone:</span> {recommendation.skinTone}
+                                      <span className="font-medium">Analysis:</span> {recommendation.skinTone}
                                     </p>
                                     <p>
                                       <span className="font-medium">Body Type:</span> {recommendation.bodyType}
@@ -911,24 +820,13 @@ export default function RecommendPage() {
 
             <div className="space-y-6">
               {!isUsingCamera && !capturedImage ? (
-                // Initial choice screen
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Card
-                      className="cursor-pointer hover:shadow-md transition-shadow"
-                      onClick={async () => {
-                        setCameraError(null)
-                        await checkCameraPermissions()
-                        startCamera()
-                      }}
-                    >
+                    <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={startCamera}>
                       <CardContent className="p-6 text-center">
                         <Camera className="h-12 w-12 mx-auto mb-4 text-purple-600" />
                         <h3 className="font-semibold mb-2">Take Live Photo</h3>
                         <p className="text-sm text-gray-600">Use your camera to take a photo</p>
-                        {cameraPermissionStatus === "denied" && (
-                          <p className="text-xs text-red-500 mt-2">Camera access denied. Check browser settings.</p>
-                        )}
                       </CardContent>
                     </Card>
 
@@ -945,7 +843,6 @@ export default function RecommendPage() {
                     </Card>
                   </div>
 
-                  {/* Camera permission help */}
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <h4 className="font-medium text-blue-900 mb-2">Camera Access Help</h4>
                     <div className="text-sm text-blue-700 space-y-1">
@@ -957,13 +854,11 @@ export default function RecommendPage() {
                   </div>
                 </div>
               ) : isUsingCamera && !capturedImage ? (
-                // Camera interface with better error handling
                 <div className="space-y-4">
                   <div className="relative bg-black rounded-lg overflow-hidden">
                     <video ref={videoRef} autoPlay playsInline className="w-full h-auto max-h-96 object-cover" />
                     <canvas ref={canvasRef} className="hidden" />
 
-                    {/* Camera overlay for better UX */}
                     <div className="absolute inset-0 pointer-events-none">
                       <div className="absolute top-4 left-4 right-4">
                         <div className="bg-black/50 text-white px-3 py-2 rounded-lg text-sm text-center">
@@ -973,7 +868,6 @@ export default function RecommendPage() {
                     </div>
                   </div>
 
-                  {/* Camera Controls */}
                   <div className="flex justify-center space-x-4">
                     <Button
                       onClick={capturePhoto}
@@ -989,7 +883,6 @@ export default function RecommendPage() {
                     </Button>
                   </div>
 
-                  {/* Troubleshooting help */}
                   <div className="text-center">
                     <p className="text-sm text-gray-600 mb-2">Camera not working?</p>
                     <Button
@@ -1005,7 +898,6 @@ export default function RecommendPage() {
                   </div>
                 </div>
               ) : capturedImage ? (
-                // Photo preview interface
                 <div className="space-y-4">
                   <div className="relative">
                     <div className="bg-gray-100 rounded-lg overflow-hidden">
@@ -1018,15 +910,13 @@ export default function RecommendPage() {
                       />
                     </div>
 
-                    {/* Preview overlay */}
                     <div className="absolute top-4 left-4 right-4">
                       <div className="bg-green-500 text-white px-3 py-2 rounded-lg text-sm text-center">
-                        ✓ Photo captured successfully! Ready for analysis.
+                        ✓ Photo captured successfully! Ready for AI analysis.
                       </div>
                     </div>
                   </div>
 
-                  {/* Preview Controls */}
                   <div className="flex justify-center space-x-3">
                     <Button
                       onClick={() => {
@@ -1066,7 +956,6 @@ export default function RecommendPage() {
                     </Button>
                   </div>
 
-                  {/* Photo info */}
                   <div className="text-center text-sm text-gray-600">
                     <p>Make sure your face is clearly visible and well-lit for best results</p>
                   </div>
