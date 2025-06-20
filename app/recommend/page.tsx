@@ -272,7 +272,19 @@ export default function RecommendPage() {
     }
   }
 
-  const analyzePhoto = async (imageData: string) => {
+  function base64ToFile(base64: string, filename = "image.jpg"): File {
+    const arr = base64.split(",")
+    const mime = arr[0].match(/:(.*?);/)[1]
+    const bstr = atob(arr[1])
+    let n = bstr.length
+    const u8arr = new Uint8Array(n)
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n)
+    }
+    return new File([u8arr], filename, { type: mime })
+  }
+
+  const analyzePhoto = async (imagestr: string) => {
     setIsAnalyzing(true)
     setShowResults(false)
     setCurrentStep(0)
@@ -280,43 +292,66 @@ export default function RecommendPage() {
     setShowPhotoDialog(false)
 
     try {
-      // Call your actual ML API
-      const response = await fetch("/api/analyze-fashion", {
+      console.log("captured image:",typeof capturedImage);
+      
+      console.log("imagedata:",typeof ImageData);
+      
+      console.log("Starting photo analysis...")
+      console.log("ML Server URL:", process.env.NEXT_PUBLIC_ML_SERVER_URL)
+
+      // Progress bar simulation
+      const progressInterval = setInterval(() => {
+        setCurrentStep((prev) => {
+          const next = (prev + 1) % analysisSteps.length
+          setProgress(((next + 1) / analysisSteps.length) * 90)
+          return next
+        })
+      }, 1000)
+
+      // ✅ Correct way to send file to FastAPI
+      const imageFile=base64ToFile(imagestr)
+      const formData = new FormData()
+      formData.append("file", imageFile)
+
+      const response = await fetch("http://127.0.0.1:8000/predict/all", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ imageData }),
+        body: formData, // ✅ sending FormData
+        // ❌ Do NOT manually set Content-Type for FormData
       })
 
-      if (!response.ok) {
-        throw new Error(`Analysis failed: ${response.statusText}`)
-      }
-
       const result = await response.json()
+      console.log("API Response:", result)
 
-      if (!result.success) {
-        throw new Error(result.error || "Analysis failed")
+      clearInterval(progressInterval)
+
+      if (!response.ok) {
+        console.error("API Error:", result)
+        throw new Error(result.detail || result.error || `HTTP ${response.status}`)
       }
 
-      // Update progress through analysis steps
-      for (let i = 0; i < analysisSteps.length; i++) {
-        setCurrentStep(i)
-        setProgress(((i + 1) / analysisSteps.length) * 100)
-        await new Promise((resolve) => setTimeout(resolve, 800))
+      if (!result.face_shape || !result.skin_tone || !result.height_in) {
+        throw new Error("Incomplete analysis data")
       }
 
-      setMlServerStatus(result.mlServerStatus || "unknown")
-      setAnalysisData(result.analysis)
-      setRecommendations(result.analysis.recommendations)
+      setProgress(100)
+      setCurrentStep(analysisSteps.length - 1)
 
-      setIsAnalyzing(false)
-      setShowResults(true)
+      setMlServerStatus("success")
+      setAnalysisData(result)
+      setRecommendations([])
+
+      setTimeout(() => {
+        setIsAnalyzing(false)
+        setShowResults(true)
+      }, 1000)
+
     } catch (error) {
       console.error("Analysis failed:", error)
       setIsAnalyzing(false)
+
+      const errorMessage = error instanceof Error ? error.message : "Unknown error"
       alert(
-        `Analysis failed: ${error instanceof Error ? error.message : "Unknown error"}. Please make sure the ML server is running.`,
+        `Analysis failed: ${errorMessage}\n\nPlease check:\n• ML server is running at ${process.env.NEXT_PUBLIC_ML_SERVER_URL}\n• Image is valid\n• Network connection`,
       )
     }
   }
@@ -344,6 +379,13 @@ export default function RecommendPage() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">
           <div className="flex items-center justify-center mb-4">
             <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mr-4">AI Fashion Recommender</h1>
+            {process.env.NODE_ENV === "development" && (
+              <div className="text-center mb-4">
+                <div className="inline-flex items-center px-3 py-1 bg-gray-100 rounded-full text-sm text-gray-600">
+                  ML Server: {process.env.NEXT_PUBLIC_ML_SERVER_URL || "Not configured"}
+                </div>
+              </div>
+            )}
             {mlServerStatus !== "unknown" && (
               <div
                 className={`flex items-center px-3 py-1 rounded-full text-sm ${

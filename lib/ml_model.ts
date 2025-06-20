@@ -9,6 +9,8 @@ export interface FashionAnalysisResult {
   colorPalette: string[]
   stylePreference: string
   recommendations: StyleRecommendation[]
+  mlServerStatus?: string
+  errors?: any
 }
 
 export interface StyleRecommendation {
@@ -16,11 +18,12 @@ export interface StyleRecommendation {
   style: string
   match: number
   description: string
+  matchDetails?: string
+  skinTone: string
+  bodyType: string
   items: RecommendationItem[]
   colors: string[]
   gradient: string
-  skinTone: string
-  bodyType: string
 }
 
 export interface RecommendationItem {
@@ -36,47 +39,66 @@ const ML_SERVER_URL = process.env.NEXT_PUBLIC_ML_SERVER_URL
 
 // Convert base64 image to File object for API
 function base64ToFile(base64String: string, filename = "image.jpg"): File {
-  const arr = base64String.split(",")
-  const mime = arr[0].match(/:(.*?);/)?.[1] || "image/jpeg"
-  const bstr = atob(arr[1])
-  let n = bstr.length
-  const u8arr = new Uint8Array(n)
+  try {
+    // Handle both data URLs and plain base64
+    const base64Data = base64String.includes(",") ? base64String.split(",")[1] : base64String
+    const mimeMatch = base64String.match(/data:([^;]+);/)
+    const mime = mimeMatch ? mimeMatch[1] : "image/jpeg"
 
-  while (n--) {
-    u8arr[n] = bstr.charCodeAt(n)
+    const bstr = atob(base64Data)
+    let n = bstr.length
+    const u8arr = new Uint8Array(n)
+
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n)
+    }
+
+    return new File([u8arr], filename, { type: mime })
+  } catch (error) {
+    console.error("Error converting base64 to file:", error)
+    throw new Error("Invalid image format")
   }
-
-  return new File([u8arr], filename, { type: mime })
 }
 
 // Face Shape Analysis using your ML model
 export class FaceAnalysisModel {
   static async analyzeFace(imageData: string): Promise<any> {
     try {
+      console.log("Starting face analysis...")
       const file = base64ToFile(imageData)
+      console.log("File created:", file.name, file.size, file.type)
+
       const formData = new FormData()
       formData.append("file", file)
 
+      console.log("Calling ML server at:", `${ML_SERVER_URL}/predict/face-shape`)
       const response = await fetch(`${ML_SERVER_URL}/predict/face-shape`, {
         method: "POST",
         body: formData,
       })
 
+      console.log("Response status:", response.status, response.statusText)
+
       if (!response.ok) {
-        throw new Error(`Face analysis failed: ${response.statusText}`)
+        const errorText = await response.text()
+        console.error("Face analysis API error:", errorText)
+        throw new Error(`Face analysis failed: ${response.status} ${response.statusText} - ${errorText}`)
       }
 
       const result = await response.json()
+      console.log("Face analysis result:", result)
+
       return {
-        faceShape: result.face_shape,
-        confidence: 0.9, // You can add confidence from your model if available
+        faceShape: result.face_shape || "oval",
+        confidence: 0.9,
       }
     } catch (error) {
       console.error("Face analysis error:", error)
-      // Fallback to mock data if API fails
+      // Return fallback data instead of throwing
       return {
         faceShape: "oval",
         confidence: 0.8,
+        error: error instanceof Error ? error.message : "Unknown error",
       }
     }
   }
@@ -86,22 +108,28 @@ export class FaceAnalysisModel {
 export class BodyAnalysisModel {
   static async analyzeBody(imageData: string): Promise<any> {
     try {
+      console.log("Starting body analysis...")
       const file = base64ToFile(imageData)
       const formData = new FormData()
       formData.append("file", file)
 
+      console.log("Calling ML server at:", `${ML_SERVER_URL}/predict/pose-measurement`)
       const response = await fetch(`${ML_SERVER_URL}/predict/pose-measurement`, {
         method: "POST",
         body: formData,
       })
 
+      console.log("Body analysis response status:", response.status)
+
       if (!response.ok) {
-        throw new Error(`Body analysis failed: ${response.statusText}`)
+        const errorText = await response.text()
+        console.error("Body analysis API error:", errorText)
+        throw new Error(`Body analysis failed: ${response.status} ${response.statusText}`)
       }
 
       const measurements = await response.json()
+      console.log("Body analysis result:", measurements)
 
-      // Process measurements to determine body type
       const bodyType = this.determineBodyType(measurements)
 
       return {
@@ -111,11 +139,11 @@ export class BodyAnalysisModel {
       }
     } catch (error) {
       console.error("Body analysis error:", error)
-      // Fallback to mock data if API fails
       return {
         bodyType: "athletic",
         measurements: {},
         proportions: "balanced",
+        error: error instanceof Error ? error.message : "Unknown error",
       }
     }
   }
@@ -153,32 +181,40 @@ export class BodyAnalysisModel {
 export class SkinToneAnalysisModel {
   static async analyzeSkinTone(imageData: string): Promise<any> {
     try {
+      console.log("Starting skin tone analysis...")
       const file = base64ToFile(imageData)
       const formData = new FormData()
       formData.append("file", file)
 
+      console.log("Calling ML server at:", `${ML_SERVER_URL}/predict/skin-tone`)
       const response = await fetch(`${ML_SERVER_URL}/predict/skin-tone`, {
         method: "POST",
         body: formData,
       })
 
+      console.log("Skin tone analysis response status:", response.status)
+
       if (!response.ok) {
-        throw new Error(`Skin tone analysis failed: ${response.statusText}`)
+        const errorText = await response.text()
+        console.error("Skin tone analysis API error:", errorText)
+        throw new Error(`Skin tone analysis failed: ${response.status} ${response.statusText}`)
       }
 
       const result = await response.json()
+      console.log("Skin tone analysis result:", result)
+
       return {
-        skinTone: result.skin_tone,
-        undertones: this.getUndertones(result.skin_tone),
+        skinTone: result.skin_tone || "medium",
+        undertones: this.getUndertones(result.skin_tone || "medium"),
         confidence: 0.9,
       }
     } catch (error) {
       console.error("Skin tone analysis error:", error)
-      // Fallback to mock data if API fails
       return {
         skinTone: "medium",
         undertones: "warm",
         confidence: 0.8,
+        error: error instanceof Error ? error.message : "Unknown error",
       }
     }
   }
@@ -427,12 +463,60 @@ export class StyleRecommendationEngine {
 
     return items.slice(0, 3) // Return top 3 items
   }
+
+  static async getFallbackRecommendations(): Promise<StyleRecommendation[]> {
+    return [
+      {
+        id: 1,
+        style: "Classic Versatile",
+        match: 85,
+        description: "Timeless pieces that work for most body types and occasions",
+        skinTone: "Suitable for most skin tones",
+        bodyType: "Flattering for various body types",
+        items: [
+          {
+            name: "Classic Blazer",
+            price: "$199",
+            image: "https://images.pexels.com/photos/1043473/pexels-photo-1043473.jpeg",
+            confidence: 0.85,
+            category: "Outerwear",
+          },
+          {
+            name: "White Button Shirt",
+            price: "$79",
+            image: "https://images.pexels.com/photos/1036622/pexels-photo-1036622.jpeg",
+            confidence: 0.82,
+            category: "Tops",
+          },
+          {
+            name: "Dark Jeans",
+            price: "$119",
+            image: "https://images.pexels.com/photos/1021693/pexels-photo-1021693.jpeg",
+            confidence: 0.8,
+            category: "Bottoms",
+          },
+        ],
+        colors: ["Navy", "White", "Black", "Gray"],
+        gradient: "from-blue-100 to-gray-200",
+      },
+    ]
+  }
 }
 
 // Main Fashion Analysis Function
 export async function analyzeFashion(imageData: string): Promise<FashionAnalysisResult> {
   try {
     console.log("Starting fashion analysis with ML models...")
+    console.log("ML Server URL:", ML_SERVER_URL)
+    console.log("Image data length:", imageData.length)
+
+    // Check ML server health first
+    const isHealthy = await checkMLServerHealth()
+    console.log("ML server health check:", isHealthy)
+
+    if (!isHealthy) {
+      console.warn("ML server is not responding, using fallback analysis")
+    }
 
     // Run all analyses in parallel for better performance
     const [faceAnalysis, bodyAnalysis, skinToneAnalysis] = await Promise.all([
@@ -462,10 +546,30 @@ export async function analyzeFashion(imageData: string): Promise<FashionAnalysis
       colorPalette,
       stylePreference: "personalized",
       recommendations,
+      mlServerStatus: isHealthy ? "online" : "offline",
+      errors: {
+        faceAnalysis: faceAnalysis.error,
+        bodyAnalysis: bodyAnalysis.error,
+        skinToneAnalysis: skinToneAnalysis.error,
+      },
     }
   } catch (error) {
     console.error("Fashion analysis failed:", error)
-    throw new Error("Failed to analyze fashion preferences")
+
+    // Return fallback analysis instead of throwing
+    return {
+      skinTone: "medium",
+      bodyType: "athletic",
+      faceShape: "oval",
+      measurements: {},
+      colorPalette: ["navy", "white", "charcoal", "camel"],
+      stylePreference: "classic",
+      recommendations: await StyleRecommendationEngine.getFallbackRecommendations(),
+      mlServerStatus: "offline",
+      errors: {
+        general: error instanceof Error ? error.message : "Analysis failed",
+      },
+    }
   }
 }
 
