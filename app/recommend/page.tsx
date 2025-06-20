@@ -25,6 +25,8 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { StyleRecommendationEngine } from "@/lib/ml_model"
+import { ColorAnalysisModel } from "@/lib/ml_model"
 import Link from "next/link"
 import Image from "next/image"
 
@@ -320,6 +322,36 @@ export default function RecommendPage() {
       })
 
       const result = await response.json()
+
+      const faceAnalysis = {
+        faceShape: result.face_shape,
+      };
+
+      const skinAnalysis={
+        skinTone: result.skin_tone,
+      }
+
+      const bodyAnalysis = {
+        height_in: result.height_in,
+        shoulder_width_in: result.shoulder_width_in,
+        chest_width_in: result.chest_width_in,
+        torso_height_in: result.torso_height_in,
+      };
+
+      const colorPalette = await ColorAnalysisModel.analyzeColors(result.skin_tone,"neutral"); // or base64 image
+
+
+      const recommendations = await StyleRecommendationEngine.generateRecommendations(
+        faceAnalysis,
+        skinAnalysis,
+        bodyAnalysis,
+        colorPalette,
+      );
+
+      setAnalysisData(result);
+      setRecommendations(recommendations);
+      setShowResults(true);
+
       console.log("API Response:", result)
 
       clearInterval(progressInterval)
@@ -337,8 +369,13 @@ export default function RecommendPage() {
       setCurrentStep(analysisSteps.length - 1)
 
       setMlServerStatus("success")
-      setAnalysisData(result)
-      setRecommendations([])
+      setAnalysisData({
+        faceShape: result.face_shape,
+        skinTone: result.skin_tone,
+        bodyType: "Athletic",
+        ...result
+      })
+      setRecommendations(recommendations)
 
       setTimeout(() => {
         setIsAnalyzing(false)
@@ -586,16 +623,13 @@ export default function RecommendPage() {
                         <h3 className="text-lg font-semibold text-gray-900 mb-4">AI Analysis Summary</h3>
                         <div className="grid md:grid-cols-3 gap-4 text-sm">
                           <div>
-                            <span className="font-medium text-gray-700">Face Shape:</span>
-                            <p className="text-gray-600 capitalize">{analysisData.faceShape}</p>
+                            <span className="font-medium text-gray-700">Face Shape:<p className="text-gray-600 capitalize">{analysisData.faceShape}</p></span>
                           </div>
                           <div>
-                            <span className="font-medium text-gray-700">Body Type:</span>
-                            <p className="text-gray-600 capitalize">{analysisData.bodyType}</p>
+                            <span className="font-medium text-gray-700">Body Type:<p className="text-gray-600 capitalize">{analysisData.bodyType}</p></span>
                           </div>
                           <div>
-                            <span className="font-medium text-gray-700">Skin Tone:</span>
-                            <p className="text-gray-600 capitalize">{analysisData.skinTone}</p>
+                            <span className="font-medium text-gray-700">Skin Tone:<p className="text-gray-600 capitalize">{analysisData.skinTone}</p></span>
                           </div>
                         </div>
                       </CardContent>
