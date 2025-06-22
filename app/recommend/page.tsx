@@ -18,6 +18,13 @@ import {
   Check,
   Wifi,
   WifiOff,
+  ShoppingCart,
+  ExternalLink,
+  Zap,
+  Crown,
+  Palette,
+  User,
+  Target
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -25,8 +32,8 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { StyleRecommendationEngine } from "@/lib/ml_model"
-import { ColorAnalysisModel } from "@/lib/ml_model"
+import { Textarea } from "@/components/ui/textarea"
+import { analyzeFashion, checkMLServerHealth } from "@/lib/ml_model"
 import Link from "next/link"
 import Image from "next/image"
 
@@ -36,8 +43,8 @@ const latestFashionTrends = [
     title: "Autumn Elegance Collection",
     brand: "Luxury Brands",
     image: "https://images.pexels.com/photos/1043473/pexels-photo-1043473.jpeg",
-    price: "$299",
-    originalPrice: "$399",
+    price: "₹2999",
+    originalPrice: "₹3999",
     discount: "25% OFF",
     rating: 4.8,
     reviews: 234,
@@ -51,8 +58,8 @@ const latestFashionTrends = [
     title: "Urban Street Collection",
     brand: "StreetWear Co",
     image: "https://images.pexels.com/photos/1021693/pexels-photo-1021693.jpeg",
-    price: "$89",
-    originalPrice: "$129",
+    price: "₹899",
+    originalPrice: "₹1299",
     discount: "31% OFF",
     rating: 4.6,
     reviews: 189,
@@ -66,8 +73,8 @@ const latestFashionTrends = [
     title: "Tech Future Wear",
     brand: "TechCore",
     image: "https://images.pexels.com/photos/1040945/pexels-photo-1040945.jpeg",
-    price: "$199",
-    originalPrice: "$249",
+    price: "₹1999",
+    originalPrice: "₹2499",
     discount: "20% OFF",
     rating: 4.9,
     reviews: 156,
@@ -81,8 +88,8 @@ const latestFashionTrends = [
     title: "Bohemian Dreams",
     brand: "Free Spirit",
     image: "https://images.pexels.com/photos/1587976/pexels-photo-1587976.jpeg",
-    price: "$159",
-    originalPrice: "$199",
+    price: "₹1599",
+    originalPrice: "₹1999",
     discount: "20% OFF",
     rating: 4.7,
     reviews: 298,
@@ -96,8 +103,8 @@ const latestFashionTrends = [
     title: "Minimalist Essentials",
     brand: "Clean Lines",
     image: "https://images.pexels.com/photos/1036622/pexels-photo-1036622.jpeg",
-    price: "$129",
-    originalPrice: "$169",
+    price: "₹1299",
+    originalPrice: "₹1699",
     discount: "24% OFF",
     rating: 4.5,
     reviews: 167,
@@ -111,8 +118,8 @@ const latestFashionTrends = [
     title: "Vintage Revival",
     brand: "Retro Chic",
     image: "https://images.pexels.com/photos/1454171/pexels-photo-1454171.jpeg",
-    price: "$179",
-    originalPrice: "$229",
+    price: "₹1799",
+    originalPrice: "₹2299",
     discount: "22% OFF",
     rating: 4.6,
     reviews: 203,
@@ -124,11 +131,38 @@ const latestFashionTrends = [
 ]
 
 const analysisSteps = [
-  { step: 1, title: "Photo Processing", description: "Processing and enhancing your image" },
-  { step: 2, title: "Face Shape Analysis", description: "Analyzing facial features using AI" },
-  { step: 3, title: "Body Measurements", description: "Detecting pose and body proportions" },
-  { step: 4, title: "Skin Tone Detection", description: "Analyzing skin tone and undertones" },
-  { step: 5, title: "Style Matching", description: "Generating personalized recommendations" },
+  { step: 1, title: "Photo Processing", description: "Processing and enhancing your image", icon: Camera },
+  { step: 2, title: "Face Shape Analysis", description: "Analyzing facial features using AI", icon: User },
+  { step: 3, title: "Body Measurements", description: "Detecting pose and body proportions", icon: Target },
+  { step: 4, title: "Skin Tone Detection", description: "Analyzing skin tone and undertones", icon: Palette },
+  { step: 5, title: "Style Matching", description: "Generating personalized recommendations", icon: Crown },
+]
+
+const personalizedInsights = [
+  {
+    title: "Color Psychology",
+    description: "Colors that enhance your natural features",
+    icon: Palette,
+    gradient: "from-pink-100 to-rose-200"
+  },
+  {
+    title: "Body Type Analysis",
+    description: "Silhouettes that flatter your proportions",
+    icon: User,
+    gradient: "from-blue-100 to-indigo-200"
+  },
+  {
+    title: "Style Personality",
+    description: "Fashion styles that match your vibe",
+    icon: Crown,
+    gradient: "from-purple-100 to-violet-200"
+  },
+  {
+    title: "Trend Compatibility",
+    description: "Current trends that work for you",
+    icon: TrendingUp,
+    gradient: "from-green-100 to-emerald-200"
+  }
 ]
 
 interface RecommendationItem {
@@ -274,18 +308,6 @@ export default function RecommendPage() {
     }
   }
 
-  function base64ToFile(base64: string, filename = "image.jpg"): File {
-    const arr = base64.split(",")
-    const mime = arr[0].match(/:(.*?);/)[1]
-    const bstr = atob(arr[1])
-    let n = bstr.length
-    const u8arr = new Uint8Array(n)
-    while (n--) {
-      u8arr[n] = bstr.charCodeAt(n)
-    }
-    return new File([u8arr], filename, { type: mime })
-  }
-
   const analyzePhoto = async (imagestr: string) => {
     setIsAnalyzing(true)
     setShowResults(false)
@@ -294,12 +316,7 @@ export default function RecommendPage() {
     setShowPhotoDialog(false)
 
     try {
-      console.log("captured image:",typeof capturedImage);
-      
-      console.log("imagedata:",typeof ImageData);
-      
       console.log("Starting photo analysis...")
-      console.log("ML Server URL:", process.env.NEXT_PUBLIC_ML_SERVER_URL)
 
       // Progress bar simulation
       const progressInterval = setInterval(() => {
@@ -310,72 +327,16 @@ export default function RecommendPage() {
         })
       }, 1000)
 
-      // ✅ Correct way to send file to FastAPI
-      const imageFile=base64ToFile(imagestr)
-      const formData = new FormData()
-      formData.append("file", imageFile)
-
-      const response = await fetch("http://127.0.0.1:8000/predict/all", {
-        method: "POST",
-        body: formData, // ✅ sending FormData
-        // ❌ Do NOT manually set Content-Type for FormData
-      })
-
-      const result = await response.json()
-
-      const faceAnalysis = {
-        faceShape: result.face_shape,
-      };
-
-      const skinAnalysis={
-        skinTone: result.skin_tone,
-      }
-
-      const bodyAnalysis = {
-        height_in: result.height_in,
-        shoulder_width_in: result.shoulder_width_in,
-        chest_width_in: result.chest_width_in,
-        torso_height_in: result.torso_height_in,
-      };
-
-      const colorPalette = await ColorAnalysisModel.analyzeColors(result.skin_tone,"neutral"); // or base64 image
-
-
-      const recommendations = await StyleRecommendationEngine.generateRecommendations(
-        faceAnalysis,
-        skinAnalysis,
-        bodyAnalysis,
-        colorPalette,
-      );
-
-      setAnalysisData(result);
-      setRecommendations(recommendations);
-      setShowResults(true);
-
-      console.log("API Response:", result)
+      // Call the ML analysis function
+      const result = await analyzeFashion(imagestr)
 
       clearInterval(progressInterval)
-
-      if (!response.ok) {
-        console.error("API Error:", result)
-        throw new Error(result.detail || result.error || `HTTP ${response.status}`)
-      }
-
-      if (!result.face_shape || !result.skin_tone || !result.height_in) {
-        throw new Error("Incomplete analysis data")
-      }
-
       setProgress(100)
       setCurrentStep(analysisSteps.length - 1)
 
-      setMlServerStatus("success")
-      setAnalysisData({
-        faceShape: result.face_shape,
-        skinTone: result.skin_tone,
-        bodyType: "Athletic",
-        ...result
-      })
-      setRecommendations(recommendations)
+      setMlServerStatus(result.mlServerStatus === "online" ? "online" : "offline")
+      setAnalysisData(result)
+      setRecommendations(result.recommendations)
 
       setTimeout(() => {
         setIsAnalyzing(false)
@@ -388,7 +349,7 @@ export default function RecommendPage() {
 
       const errorMessage = error instanceof Error ? error.message : "Unknown error"
       alert(
-        `Analysis failed: ${errorMessage}\n\nPlease check:\n• ML server is running at ${process.env.NEXT_PUBLIC_ML_SERVER_URL}\n• Image is valid\n• Network connection`,
+        `Analysis failed: ${errorMessage}\n\nPlease try again or check your connection.`,
       )
     }
   }
@@ -414,18 +375,27 @@ export default function RecommendPage() {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 pt-20 pb-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">
-          <div className="flex items-center justify-center mb-4">
-            <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mr-4">AI Fashion Recommender</h1>
-            {process.env.NODE_ENV === "development" && (
-              <div className="text-center mb-4">
-                <div className="inline-flex items-center px-3 py-1 bg-gray-100 rounded-full text-sm text-gray-600">
-                  ML Server: {process.env.NEXT_PUBLIC_ML_SERVER_URL || "Not configured"}
+          <div className="flex items-center justify-center mb-6">
+            <motion.div
+              animate={{ rotate: [0, 360] }}
+              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+              className="w-16 h-16 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full flex items-center justify-center mr-4"
+            >
+              <Sparkles className="h-8 w-8 text-white" />
+            </motion.div>
+            <div>
+              <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">AI Fashion Recommender</h1>
+              {process.env.NODE_ENV === "development" && (
+                <div className="text-center mt-2">
+                  <div className="inline-flex items-center px-3 py-1 bg-gray-100 rounded-full text-sm text-gray-600">
+                    ML Server: {process.env.NEXT_PUBLIC_ML_SERVER_URL || "Not configured"}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
             {mlServerStatus !== "unknown" && (
               <div
-                className={`flex items-center px-3 py-1 rounded-full text-sm ${
+                className={`flex items-center px-3 py-1 rounded-full text-sm ml-4 ${
                   mlServerStatus === "online" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
                 }`}
               >
@@ -434,8 +404,9 @@ export default function RecommendPage() {
               </div>
             )}
           </div>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Upload your photo to get personalized fashion recommendations powered by advanced AI models.
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
+            Upload your photo to get personalized fashion recommendations powered by advanced AI models. 
+            Discover styles that complement your unique features and current trends.
           </p>
         </motion.div>
 
@@ -449,19 +420,21 @@ export default function RecommendPage() {
                 animate={{ opacity: 1, scale: 1 }}
                 className="text-center"
               >
-                <Card className="max-w-md mx-auto shadow-xl border-0 bg-gradient-to-br from-purple-500 to-pink-500 text-white">
+                <Card className="max-w-2xl mx-auto shadow-2xl border-0 bg-gradient-to-br from-purple-500 to-pink-500 text-white overflow-hidden">
                   <CardContent className="p-8">
-                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="space-y-4">
-                      <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto">
-                        <Camera className="h-10 w-10" />
+                    <motion.div whileHover={{ scale: 1.02 }} className="space-y-6">
+                      <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mx-auto">
+                        <Camera className="h-12 w-12" />
                       </div>
-                      <h3 className="text-2xl font-bold">Get Your Style Analysis</h3>
-                      <p className="text-purple-100">
-                        Upload a photo or take a live picture to receive AI-powered fashion recommendations
-                      </p>
+                      <div>
+                        <h3 className="text-3xl font-bold mb-2">Get Your Style Analysis</h3>
+                        <p className="text-purple-100 text-lg">
+                          Upload a photo or take a live picture to receive AI-powered fashion recommendations
+                        </p>
+                      </div>
 
                       {capturedImage && (
-                        <div className="relative w-40 h-40 mx-auto rounded-lg overflow-hidden border-2 border-white/30">
+                        <div className="relative w-48 h-48 mx-auto rounded-xl overflow-hidden border-4 border-white/30">
                           <Image
                             src={capturedImage || "/placeholder.svg"}
                             alt="Captured"
@@ -472,32 +445,32 @@ export default function RecommendPage() {
                             onClick={() => setCapturedImage(null)}
                             className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
                           >
-                            <X className="h-3 w-3" />
+                            <X className="h-4 w-4" />
                           </button>
                         </div>
                       )}
 
-                      <div className="space-y-3">
+                      <div className="space-y-4">
                         {!capturedImage ? (
                           <Button
                             onClick={() => setShowPhotoDialog(true)}
                             size="lg"
-                            className="bg-white text-purple-600 hover:bg-gray-100 font-semibold px-8 py-3 rounded-full w-full"
+                            className="bg-white text-purple-600 hover:bg-gray-100 font-semibold px-8 py-4 rounded-full w-full text-lg"
                           >
-                            <Camera className="mr-2 h-5 w-5" />
-                            Take Photo / Upload
+                            <Camera className="mr-3 h-6 w-6" />
+                            Take Photo / Upload Image
                           </Button>
                         ) : (
                           <>
                             <Button
                               onClick={() => analyzePhoto(capturedImage)}
                               size="lg"
-                              className="bg-white text-purple-600 hover:bg-gray-100 font-semibold px-8 py-3 rounded-full w-full"
+                              className="bg-white text-purple-600 hover:bg-gray-100 font-semibold px-8 py-4 rounded-full w-full text-lg"
                             >
-                              <Sparkles className="mr-2 h-5 w-5" />
+                              <Sparkles className="mr-3 h-6 w-6" />
                               Analyze My Style
                             </Button>
-                            <div className="flex space-x-2">
+                            <div className="flex space-x-3">
                               <Button
                                 onClick={() => setShowPhotoDialog(true)}
                                 size="sm"
@@ -534,50 +507,59 @@ export default function RecommendPage() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
                 >
-                  <Card className="max-w-2xl mx-auto shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+                  <Card className="max-w-3xl mx-auto shadow-2xl border-0 bg-white/90 backdrop-blur-sm">
                     <CardHeader>
                       <CardTitle className="text-center text-2xl">Analyzing Your Photo with AI...</CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-6">
+                    <CardContent className="space-y-8">
                       <div className="text-center">
                         <motion.div
                           animate={{ rotate: 360 }}
                           transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-                          className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full mx-auto mb-4"
+                          className="w-20 h-20 border-4 border-purple-200 border-t-purple-600 rounded-full mx-auto mb-6"
                         />
-                        <p className="text-lg font-medium text-gray-700">{analysisSteps[currentStep]?.title}</p>
-                        <p className="text-sm text-gray-500">{analysisSteps[currentStep]?.description}</p>
+                        <div className="flex items-center justify-center space-x-2 mb-2">
+                          <analysisSteps[currentStep].icon className="h-6 w-6 text-purple-600" />
+                          <p className="text-xl font-semibold text-gray-700">{analysisSteps[currentStep]?.title}</p>
+                        </div>
+                        <p className="text-gray-500">{analysisSteps[currentStep]?.description}</p>
                       </div>
 
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span>Progress</span>
+                      <div className="space-y-3">
+                        <div className="flex justify-between text-sm font-medium">
+                          <span>Analysis Progress</span>
                           <span>{Math.round(progress)}%</span>
                         </div>
-                        <Progress value={progress} className="h-2" />
+                        <Progress value={progress} className="h-3" />
                       </div>
 
-                      <div className="grid grid-cols-5 gap-2">
+                      <div className="grid grid-cols-5 gap-3">
                         {analysisSteps.map((step, index) => (
-                          <div
+                          <motion.div
                             key={step.step}
-                            className={`text-center p-2 rounded-lg transition-colors ${
+                            initial={{ scale: 0.8, opacity: 0.5 }}
+                            animate={{ 
+                              scale: index <= currentStep ? 1 : 0.8,
+                              opacity: index <= currentStep ? 1 : 0.5
+                            }}
+                            className={`text-center p-3 rounded-xl transition-all ${
                               index <= currentStep ? "bg-purple-100 text-purple-700" : "bg-gray-100 text-gray-400"
                             }`}
                           >
+                            <step.icon className="h-6 w-6 mx-auto mb-2" />
                             <div className="text-xs font-medium">{step.title}</div>
-                          </div>
+                          </motion.div>
                         ))}
                       </div>
 
                       {capturedImage && (
                         <div className="flex justify-center">
-                          <div className="w-24 h-24 rounded-lg overflow-hidden border-2 border-purple-200">
+                          <div className="w-32 h-32 rounded-xl overflow-hidden border-4 border-purple-200">
                             <Image
                               src={capturedImage || "/placeholder.svg"}
                               alt="Analyzing"
-                              width={96}
-                              height={96}
+                              width={128}
+                              height={128}
                               className="object-cover w-full h-full"
                             />
                           </div>
@@ -598,45 +580,69 @@ export default function RecommendPage() {
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       transition={{ delay: 0.2, duration: 0.5, ease: "backOut" }}
-                      className="inline-flex items-center px-4 py-2 bg-green-100 text-green-700 rounded-full text-sm font-medium mb-4"
+                      className="inline-flex items-center px-6 py-3 bg-green-100 text-green-700 rounded-full text-lg font-semibold mb-6"
                     >
-                      <Check className="h-4 w-4 mr-2" />
+                      <Check className="h-6 w-6 mr-3" />
                       AI Analysis Complete!
                     </motion.div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Your Personalized Style Recommendations</h2>
-                    <p className="text-gray-600 mb-6">
+                    <h2 className="text-3xl font-bold text-gray-900 mb-4">Your Personalized Style Recommendations</h2>
+                    <p className="text-gray-600 mb-8 text-lg max-w-2xl mx-auto">
                       Based on our advanced AI analysis of your photo, here are the styles that suit you best
                     </p>
 
                     <div className="flex justify-center space-x-4">
-                      <Button onClick={resetAnalysis} variant="outline">
-                        <RefreshCw className="mr-2 h-4 w-4" />
+                      <Button onClick={resetAnalysis} variant="outline" size="lg" className="px-6">
+                        <RefreshCw className="mr-2 h-5 w-5" />
                         Try Another Photo
                       </Button>
+                      <Link href="/try-on">
+                        <Button size="lg" className="bg-purple-600 hover:bg-purple-700 text-white px-6">
+                          <Camera className="mr-2 h-5 w-5" />
+                          Try On Virtually
+                        </Button>
+                      </Link>
                     </div>
                   </div>
 
                   {/* Analysis Summary */}
                   {analysisData && (
-                    <Card className="bg-gradient-to-r from-indigo-50 to-purple-50 border-0">
-                      <CardContent className="p-6">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">AI Analysis Summary</h3>
-                        <div className="grid md:grid-cols-3 gap-4 text-sm">
-                          <div>
-                            <span className="font-medium text-gray-700">Face Shape:<p className="text-gray-600 capitalize">{analysisData.faceShape}</p></span>
+                    <Card className="bg-gradient-to-r from-indigo-50 to-purple-50 border-0 shadow-lg">
+                      <CardContent className="p-8">
+                        <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center">AI Analysis Summary</h3>
+                        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                          {personalizedInsights.map((insight, index) => (
+                            <motion.div
+                              key={insight.title}
+                              initial={{ opacity: 0, y: 20 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: index * 0.1 }}
+                              className={`bg-gradient-to-br ${insight.gradient} p-6 rounded-xl text-center`}
+                            >
+                              <insight.icon className="h-8 w-8 mx-auto mb-3 text-gray-700" />
+                              <h4 className="font-semibold text-gray-900 mb-2">{insight.title}</h4>
+                              <p className="text-sm text-gray-600">{insight.description}</p>
+                            </motion.div>
+                          ))}
+                        </div>
+                        <div className="mt-6 grid md:grid-cols-3 gap-6 text-center">
+                          <div className="bg-white/60 p-4 rounded-lg">
+                            <span className="font-semibold text-gray-700">Face Shape:</span>
+                            <p className="text-gray-900 capitalize font-medium">{analysisData.faceShape}</p>
                           </div>
-                          <div>
-                            <span className="font-medium text-gray-700">Body Type:<p className="text-gray-600 capitalize">{analysisData.bodyType}</p></span>
+                          <div className="bg-white/60 p-4 rounded-lg">
+                            <span className="font-semibold text-gray-700">Body Type:</span>
+                            <p className="text-gray-900 capitalize font-medium">{analysisData.bodyType}</p>
                           </div>
-                          <div>
-                            <span className="font-medium text-gray-700">Skin Tone:<p className="text-gray-600 capitalize">{analysisData.skinTone}</p></span>
+                          <div className="bg-white/60 p-4 rounded-lg">
+                            <span className="font-semibold text-gray-700">Skin Tone:</span>
+                            <p className="text-gray-900 capitalize font-medium">{analysisData.skinTone}</p>
                           </div>
                         </div>
                       </CardContent>
                     </Card>
                   )}
 
-                  <div className="grid gap-6">
+                  <div className="grid gap-8">
                     {recommendations.map((recommendation, index) => (
                       <motion.div
                         key={recommendation.id}
@@ -645,80 +651,96 @@ export default function RecommendPage() {
                         transition={{ delay: index * 0.1 }}
                       >
                         <Card
-                          className={`shadow-lg border-0 bg-gradient-to-r ${recommendation.gradient} overflow-hidden`}
+                          className={`shadow-2xl border-0 bg-gradient-to-r ${recommendation.gradient} overflow-hidden`}
                         >
                           <CardContent className="p-0">
-                            <div className="grid md:grid-cols-3 gap-6 p-6">
+                            <div className="grid md:grid-cols-3 gap-8 p-8">
                               {/* Style Info */}
-                              <div className="md:col-span-1 space-y-4">
+                              <div className="md:col-span-1 space-y-6">
                                 <div className="flex items-center justify-between">
-                                  <Badge className="bg-white/20 text-gray-700 font-medium">
+                                  <Badge className="bg-white/90 text-gray-700 font-semibold text-lg px-4 py-2">
                                     {recommendation.match}% Match
                                   </Badge>
-                                  <TrendingUp className="h-5 w-5 text-gray-600" />
+                                  <TrendingUp className="h-6 w-6 text-gray-600" />
                                 </div>
 
                                 <div>
-                                  <h3 className="text-2xl font-bold text-gray-900 mb-2">{recommendation.style}</h3>
-                                  <p className="text-gray-700 text-sm mb-3">{recommendation.description}</p>
+                                  <h3 className="text-3xl font-bold text-gray-900 mb-3">{recommendation.style}</h3>
+                                  <p className="text-gray-700 mb-4 leading-relaxed">{recommendation.description}</p>
 
-                                  <div className="space-y-2 text-xs">
-                                    <p>
-                                      <span className="font-medium">Analysis:</span> {recommendation.skinTone}
-                                    </p>
-                                    <p>
-                                      <span className="font-medium">Body Type:</span> {recommendation.bodyType}
-                                    </p>
+                                  <div className="space-y-3 text-sm">
+                                    <div className="bg-white/60 p-3 rounded-lg">
+                                      <span className="font-semibold">Skin Analysis:</span>
+                                      <p className="text-gray-700">{recommendation.skinTone}</p>
+                                    </div>
+                                    <div className="bg-white/60 p-3 rounded-lg">
+                                      <span className="font-semibold">Body Type:</span>
+                                      <p className="text-gray-700">{recommendation.bodyType}</p>
+                                    </div>
                                   </div>
                                 </div>
 
                                 <div>
-                                  <h4 className="font-medium text-gray-900 mb-2">Perfect Colors:</h4>
+                                  <h4 className="font-semibold text-gray-900 mb-3">Perfect Colors for You:</h4>
                                   <div className="flex flex-wrap gap-2">
                                     {recommendation.colors.map((color) => (
-                                      <Badge key={color} variant="secondary" className="text-xs">
+                                      <Badge key={color} variant="secondary" className="text-sm bg-white/80">
                                         {color}
                                       </Badge>
                                     ))}
                                   </div>
                                 </div>
 
-                                <Link href="/try-on">
-                                  <Button className="w-full bg-gray-900 hover:bg-gray-800 text-white">
-                                    Try This Style
-                                    <ArrowRight className="ml-2 h-4 w-4" />
+                                <div className="space-y-3">
+                                  <Link href="/try-on">
+                                    <Button className="w-full bg-gray-900 hover:bg-gray-800 text-white py-3 text-lg">
+                                      Try This Style Virtually
+                                      <ArrowRight className="ml-2 h-5 w-5" />
+                                    </Button>
+                                  </Link>
+                                  <Button variant="outline" className="w-full py-3">
+                                    <ShoppingCart className="mr-2 h-5 w-5" />
+                                    Shop Similar Items
                                   </Button>
-                                </Link>
+                                </div>
                               </div>
 
                               {/* Recommended Items */}
                               <div className="md:col-span-2">
-                                <h4 className="font-semibold text-gray-900 mb-4">AI Recommended Items:</h4>
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <h4 className="font-bold text-gray-900 mb-6 text-xl">AI Recommended Items:</h4>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                                   {recommendation.items.map((item) => (
                                     <motion.div
                                       key={item.name}
                                       whileHover={{ scale: 1.05 }}
-                                      className="bg-white/60 backdrop-blur-sm rounded-lg p-4 text-center space-y-2"
+                                      className="bg-white/80 backdrop-blur-sm rounded-xl p-6 text-center space-y-4 shadow-lg"
                                     >
-                                      <div className="w-full h-24 bg-gray-200 rounded-lg mb-2 overflow-hidden">
+                                      <div className="w-full h-32 bg-gray-200 rounded-xl mb-4 overflow-hidden">
                                         <img
                                           src={item.image || "/placeholder.svg"}
                                           alt={item.name}
                                           className="w-full h-full object-cover"
                                         />
                                       </div>
-                                      <h5 className="font-medium text-sm text-gray-900">{item.name}</h5>
-                                      <p className="text-purple-600 font-semibold text-sm">{item.price}</p>
-                                      <div className="flex items-center justify-center space-x-1">
-                                        <Star className="h-3 w-3 text-yellow-400 fill-current" />
-                                        <span className="text-xs text-gray-600">
-                                          {Math.round(item.confidence * 100)}% match
-                                        </span>
+                                      <div>
+                                        <h5 className="font-semibold text-gray-900 mb-2">{item.name}</h5>
+                                        <p className="text-purple-600 font-bold text-lg">{item.price}</p>
+                                        <div className="flex items-center justify-center space-x-2 mt-2">
+                                          <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                                          <span className="text-sm text-gray-600 font-medium">
+                                            {Math.round(item.confidence * 100)}% match
+                                          </span>
+                                        </div>
+                                        <Badge variant="outline" className="text-xs mt-2">
+                                          {item.category}
+                                        </Badge>
                                       </div>
-                                      <Badge variant="outline" className="text-xs">
-                                        {item.category}
-                                      </Badge>
+                                      <div className="space-y-2">
+                                        <Button size="sm" className="w-full bg-purple-600 hover:bg-purple-700 text-white">
+                                          <ExternalLink className="mr-2 h-4 w-4" />
+                                          View Item
+                                        </Button>
+                                      </div>
                                     </motion.div>
                                   ))}
                                 </div>
@@ -732,10 +754,76 @@ export default function RecommendPage() {
                 </motion.div>
               )}
             </AnimatePresence>
+
+            {/* Additional Fashion Inspiration */}
+            {!isAnalyzing && !showResults && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+              >
+                <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+                  <CardHeader>
+                    <CardTitle className="flex items-center space-x-2">
+                      <Zap className="h-6 w-6 text-orange-500" />
+                      <span>Fashion Inspiration</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {latestFashionTrends.slice(0, 6).map((item, index) => (
+                        <motion.div
+                          key={item.id}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.1 }}
+                          className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-all"
+                        >
+                          <div className="relative">
+                            <img 
+                              src={item.image} 
+                              alt={item.title}
+                              className="w-full h-48 object-cover"
+                            />
+                            {item.trending && (
+                              <div className="absolute top-3 left-3 bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                                🔥 Trending
+                              </div>
+                            )}
+                            <div className="absolute top-3 right-3">
+                              <Badge className="bg-black/60 text-white text-xs">
+                                {item.category}
+                              </Badge>
+                            </div>
+                          </div>
+                          
+                          <div className="p-4">
+                            <h3 className="font-semibold text-gray-900 mb-1">{item.title}</h3>
+                            <p className="text-sm text-gray-500 mb-2">{item.brand}</p>
+                            <p className="text-xs text-gray-600 mb-3">{item.description}</p>
+                            
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-2">
+                                <span className="font-bold text-gray-900">{item.price}</span>
+                                <span className="text-sm text-gray-400 line-through">{item.originalPrice}</span>
+                              </div>
+                              <Badge variant="secondary" className="bg-green-100 text-green-700 text-xs">
+                                {item.discount}
+                              </Badge>
+                            </div>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
           </div>
 
-          {/* Latest Fashion Sidebar */}
+          {/* Sidebar */}
           <div className="space-y-6">
+            {/* Latest Fashion Sidebar */}
             <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -878,14 +966,47 @@ export default function RecommendPage() {
                 </Tabs>
               </CardContent>
             </Card>
+
+            {/* Style Tips */}
+            <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Crown className="h-5 w-5 text-purple-600" />
+                  <span>Style Tips</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="bg-purple-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-purple-900 mb-2">💡 Pro Tip</h4>
+                  <p className="text-sm text-purple-700">
+                    For best results, use a well-lit photo with your face clearly visible and minimal background distractions.
+                  </p>
+                </div>
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-blue-900 mb-2">📸 Photo Guidelines</h4>
+                  <ul className="text-sm text-blue-700 space-y-1">
+                    <li>• Face the camera directly</li>
+                    <li>• Ensure good lighting</li>
+                    <li>• Avoid heavy makeup or filters</li>
+                    <li>• Include shoulders in the frame</li>
+                  </ul>
+                </div>
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-green-900 mb-2">🎯 Accuracy</h4>
+                  <p className="text-sm text-green-700">
+                    Our AI analyzes 50+ facial and body features to provide 95%+ accurate style recommendations.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
 
         {/* Photo Input Dialog */}
         <Dialog open={showPhotoDialog} onOpenChange={setShowPhotoDialog}>
-          <DialogContent className="max-w-3xl">
+          <DialogContent className="max-w-4xl">
             <DialogHeader>
-              <DialogTitle>
+              <DialogTitle className="text-2xl">
                 {!isUsingCamera && !capturedImage
                   ? "Choose Photo Input Method"
                   : isUsingCamera
@@ -896,32 +1017,32 @@ export default function RecommendPage() {
 
             <div className="space-y-6">
               {!isUsingCamera && !capturedImage ? (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={startCamera}>
-                      <CardContent className="p-6 text-center">
-                        <Camera className="h-12 w-12 mx-auto mb-4 text-purple-600" />
-                        <h3 className="font-semibold mb-2">Take Live Photo</h3>
-                        <p className="text-sm text-gray-600">Use your camera to take a photo</p>
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={startCamera}>
+                      <CardContent className="p-8 text-center">
+                        <Camera className="h-16 w-16 mx-auto mb-4 text-purple-600" />
+                        <h3 className="font-bold text-xl mb-2">Take Live Photo</h3>
+                        <p className="text-gray-600">Use your camera to take a photo</p>
                       </CardContent>
                     </Card>
 
                     <Card
-                      className="cursor-pointer hover:shadow-md transition-shadow"
+                      className="cursor-pointer hover:shadow-lg transition-shadow"
                       onClick={() => fileInputRef.current?.click()}
                     >
-                      <CardContent className="p-6 text-center">
-                        <Upload className="h-12 w-12 mx-auto mb-4 text-purple-600" />
-                        <h3 className="font-semibold mb-2">Upload Photo</h3>
-                        <p className="text-sm text-gray-600">Choose from your device</p>
-                        <p className="text-xs text-green-600 mt-2">Recommended if camera issues occur</p>
+                      <CardContent className="p-8 text-center">
+                        <Upload className="h-16 w-16 mx-auto mb-4 text-purple-600" />
+                        <h3 className="font-bold text-xl mb-2">Upload Photo</h3>
+                        <p className="text-gray-600">Choose from your device</p>
+                        <p className="text-sm text-green-600 mt-2">Recommended if camera issues occur</p>
                       </CardContent>
                     </Card>
                   </div>
 
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h4 className="font-medium text-blue-900 mb-2">Camera Access Help</h4>
-                    <div className="text-sm text-blue-700 space-y-1">
+                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+                    <h4 className="font-semibold text-blue-900 mb-3">📋 Camera Access Help</h4>
+                    <div className="text-sm text-blue-700 space-y-2">
                       <p>• Make sure you're using HTTPS (secure connection)</p>
                       <p>• Allow camera permissions when prompted</p>
                       <p>• Close other apps that might be using your camera</p>
@@ -930,15 +1051,15 @@ export default function RecommendPage() {
                   </div>
                 </div>
               ) : isUsingCamera && !capturedImage ? (
-                <div className="space-y-4">
-                  <div className="relative bg-black rounded-lg overflow-hidden">
+                <div className="space-y-6">
+                  <div className="relative bg-black rounded-xl overflow-hidden">
                     <video ref={videoRef} autoPlay playsInline className="w-full h-auto max-h-96 object-cover" />
                     <canvas ref={canvasRef} className="hidden" />
 
                     <div className="absolute inset-0 pointer-events-none">
                       <div className="absolute top-4 left-4 right-4">
-                        <div className="bg-black/50 text-white px-3 py-2 rounded-lg text-sm text-center">
-                          Position yourself in the frame and click capture
+                        <div className="bg-black/60 text-white px-4 py-3 rounded-lg text-center backdrop-blur-sm">
+                          Position yourself in the frame and click capture when ready
                         </div>
                       </div>
                     </div>
@@ -948,35 +1069,35 @@ export default function RecommendPage() {
                     <Button
                       onClick={capturePhoto}
                       size="lg"
-                      className="bg-purple-600 hover:bg-purple-700 text-white px-8"
+                      className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3"
                     >
-                      <Camera className="mr-2 h-5 w-5" />
+                      <Camera className="mr-2 h-6 w-6" />
                       Capture Photo
                     </Button>
-                    <Button onClick={stopCamera} variant="outline" size="lg" className="px-8">
-                      <X className="mr-2 h-4 w-4" />
+                    <Button onClick={stopCamera} variant="outline" size="lg" className="px-8 py-3">
+                      <X className="mr-2 h-5 w-5" />
                       Cancel
                     </Button>
                   </div>
 
                   <div className="text-center">
-                    <p className="text-sm text-gray-600 mb-2">Camera not working?</p>
+                    <p className="text-gray-600 mb-2">Camera not working?</p>
                     <Button
                       onClick={() => {
                         stopCamera()
                         setCapturedImage(null)
                       }}
                       variant="link"
-                      className="text-purple-600 text-sm"
+                      className="text-purple-600"
                     >
                       Try uploading a photo instead
                     </Button>
                   </div>
                 </div>
               ) : capturedImage ? (
-                <div className="space-y-4">
+                <div className="space-y-6">
                   <div className="relative">
-                    <div className="bg-gray-100 rounded-lg overflow-hidden">
+                    <div className="bg-gray-100 rounded-xl overflow-hidden">
                       <Image
                         src={capturedImage || "/placeholder.svg"}
                         alt="Captured photo"
@@ -987,21 +1108,21 @@ export default function RecommendPage() {
                     </div>
 
                     <div className="absolute top-4 left-4 right-4">
-                      <div className="bg-green-500 text-white px-3 py-2 rounded-lg text-sm text-center">
+                      <div className="bg-green-500 text-white px-4 py-3 rounded-lg text-center backdrop-blur-sm">
                         ✓ Photo captured successfully! Ready for AI analysis.
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex justify-center space-x-3">
+                  <div className="flex justify-center space-x-4">
                     <Button
                       onClick={() => {
                         analyzePhoto(capturedImage)
                       }}
                       size="lg"
-                      className="bg-purple-600 hover:bg-purple-700 text-white px-8"
+                      className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3"
                     >
-                      <Sparkles className="mr-2 h-5 w-5" />
+                      <Sparkles className="mr-2 h-6 w-6" />
                       Analyze My Style
                     </Button>
 
@@ -1012,9 +1133,9 @@ export default function RecommendPage() {
                       }}
                       variant="outline"
                       size="lg"
-                      className="px-6"
+                      className="px-6 py-3"
                     >
-                      <RefreshCw className="mr-2 h-4 w-4" />
+                      <RefreshCw className="mr-2 h-5 w-5" />
                       Retake
                     </Button>
 
@@ -1025,14 +1146,14 @@ export default function RecommendPage() {
                       }}
                       variant="outline"
                       size="lg"
-                      className="px-6"
+                      className="px-6 py-3"
                     >
-                      <X className="mr-2 h-4 w-4" />
+                      <X className="mr-2 h-5 w-5" />
                       Cancel
                     </Button>
                   </div>
 
-                  <div className="text-center text-sm text-gray-600">
+                  <div className="text-center text-gray-600">
                     <p>Make sure your face is clearly visible and well-lit for best results</p>
                   </div>
                 </div>
