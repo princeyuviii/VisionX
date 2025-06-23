@@ -12,6 +12,9 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 export const metadata: Metadata = {
   title: 'VisionX - Try Fashion. Live. Instantly.',
   description: 'Live real-time virtual try-on platform for fashion. Try trending clothes, glasses, watches using just your camera.',
+  icons: {
+    icon: '/logo2.ico', 
+  },
 };
 
 export default function RootLayout({
