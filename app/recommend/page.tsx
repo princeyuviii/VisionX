@@ -518,10 +518,20 @@ export default function RecommendPage() {
                           transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
                           className="w-20 h-20 border-4 border-purple-200 border-t-purple-600 rounded-full mx-auto mb-6"
                         />
-                        <div className="flex items-center justify-center space-x-2 mb-2">
-                          <analysisSteps[currentStep].icon className="h-6 w-6 text-purple-600" />
-                          <p className="text-xl font-semibold text-gray-700">{analysisSteps[currentStep]?.title}</p>
-                        </div>
+
+                        {/** ✅ Fix here — declare Icon before usage */}
+                        {(() => {
+                          const Icon = analysisSteps[currentStep]?.icon;
+                          return (
+                            <div className="flex items-center justify-center space-x-2 mb-2">
+                              {Icon && <Icon className="h-6 w-6 text-purple-600" />}
+                              <p className="text-xl font-semibold text-gray-700">
+                                {analysisSteps[currentStep]?.title}
+                              </p>
+                            </div>
+                          );
+                        })()}
+
                         <p className="text-gray-500">{analysisSteps[currentStep]?.description}</p>
                       </div>
 
