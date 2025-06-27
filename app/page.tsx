@@ -1,24 +1,32 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Camera, Sparkles, TrendingUp, Users, ArrowRight, MessageCircle } from 'lucide-react';
+import { Camera, Sparkles, TrendingUp, Globe, Users, ArrowRight, MessageCircle, ShieldCheck, Heart} from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import TrendingFashion from '@/components/TrendingFashion';
 import FloatingAIHelper from '@/components/FloatingAIHelper';
+import OutfitShowroom from '@/components/OutfitShowroom';
+import TryOnGallery from '@/components/TryOnGallery';
+import TestimonialsCarousel from '@/components/TestimonialsCarousel';
+import SocialLinks from '@/components/SocialLinks';
 
 const fadeInUp = {
-  initial: { opacity: 0, y: 60 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }, 
+  initial: { 
+    opacity: 0, 
+    y: 60,
+    transition: { duration: 0.6, ease: "easeOut" }
+  },
+  animate: { 
+    opacity: 1, 
+    y: 0,
+    transition: { duration: 0.6, ease: "easeOut" }
+  }
 };
 
 const staggerChildren = {
-  animate: {
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
+  animate: { transition: { staggerChildren: 0.1 } }
 };
 
 export default function Home() {
@@ -109,21 +117,23 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-white/50">
+      <TryOnGallery />
+
+      {/*Features + Use Case Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white/40 to-white/80 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="text-center mb-12"
+            className="text-center mb-16"
           >
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-              Why Choose VisionX?
+            <h2 className="text-4xl font-extrabold text-gray-900 mb-4">
+              What Makes VisionX Unique?
             </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Revolutionary technology meets fashion-forward thinking
+            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+              A fashion-tech platform that combines AI, AR, and community to redefine how you shop, style, and express.
             </p>
           </motion.div>
 
@@ -132,43 +142,84 @@ export default function Home() {
             initial="initial"
             whileInView="animate"
             viewport={{ once: true }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-8"
+            className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-16"
           >
             {[
               {
                 icon: Camera,
-                title: "Real-Time Try-On",
-                description: "Experience fashion instantly with our advanced AR technology. No waiting, no guessing.",
-                gradient: "from-blue-500 to-cyan-500"
+                title: "Virtual Try-On",
+                description: "See how clothes look on you in real-time using AR. Try before you buy, instantly.",
+                gradient: "from-indigo-500 to-blue-500"
               },
               {
                 icon: Sparkles,
-                title: "AI-Powered Recommendations",
-                description: "Get personalized style suggestions based on your face tone, body shape, and preferences.",
-                gradient: "from-purple-500 to-pink-500"
+                title: "AI Style Coach",
+                description: "Smart recommendations based on skin tone, body type & your previous choices.",
+                gradient: "from-pink-500 to-purple-500"
               },
               {
                 icon: TrendingUp,
-                title: "Latest Trends",
-                description: "Stay ahead with curated fashion trends from Old Money to Streetwear to Techcore.",
-                gradient: "from-orange-500 to-red-500"
+                title: "Personalized Trends",
+                description: "Get trend alerts tailored to your taste — from Y2K to Clean Girl to Old Money.",
+                gradient: "from-yellow-400 to-orange-500"
               }
             ].map((feature, index) => (
               <motion.div key={index} variants={fadeInUp}>
-                <Card className="h-full border-0 shadow-lg hover:shadow-2xl transition-shadow duration-300 bg-white/80 backdrop-blur-sm">
+                <Card className="h-full border-0 shadow-lg hover:shadow-2xl transition duration-300 bg-white/70 backdrop-blur-lg">
                   <CardContent className="p-8 text-center">
                     <motion.div
-                      whileHover={{ scale: 1.1, rotate: 5 }}
+                      whileHover={{ scale: 1.15, rotate: 5 }}
                       className={`inline-flex p-4 rounded-2xl bg-gradient-to-r ${feature.gradient} mb-6`}
                     >
                       <feature.icon className="h-8 w-8 text-white" />
                     </motion.div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                      {feature.title}
-                    </h3>
-                    <p className="text-gray-600 leading-relaxed">
-                      {feature.description}
-                    </p>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">{feature.title}</h3>
+                    <p className="text-gray-600">{feature.description}</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          {/* Additional Section - Platform Values / Purpose */}
+          <motion.div
+            variants={staggerChildren}
+            initial="initial"
+            whileInView="animate"
+            viewport={{ once: true }}
+            className="grid grid-cols-1 md:grid-cols-3 gap-10"
+          >
+            {[
+              {
+                icon: Globe,
+                title: "Global Accessibility",
+                description: "Designed for everyone. Works seamlessly across devices and regions.",
+                gradient: "from-green-500 to-teal-500"
+              },
+              {
+                icon: ShieldCheck,
+                title: "Data Privacy First",
+                description: "Your photos, preferences, and data are encrypted and never sold.",
+                gradient: "from-gray-500 to-gray-900"
+              },
+              {
+                icon: Heart,
+                title: "Fashion for All",
+                description: "Built on inclusivity — regardless of size, gender, or budget.",
+                gradient: "from-red-400 to-pink-500"
+              }
+            ].map((feature, index) => (
+              <motion.div key={index} variants={fadeInUp}>
+                <Card className="h-full border-0 shadow-lg hover:shadow-2xl transition duration-300 bg-white/70 backdrop-blur-lg">
+                  <CardContent className="p-8 text-center">
+                    <motion.div
+                      whileHover={{ scale: 1.15, rotate: 5 }}
+                      className={`inline-flex p-4 rounded-2xl bg-gradient-to-r ${feature.gradient} mb-6`}
+                    >
+                      <feature.icon className="h-8 w-8 text-white" />
+                    </motion.div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">{feature.title}</h3>
+                    <p className="text-gray-600">{feature.description}</p>
                   </CardContent>
                 </Card>
               </motion.div>
@@ -177,38 +228,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <motion.div
-            variants={staggerChildren}
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true }}
-            className="grid grid-cols-2 md:grid-cols-4 gap-8"
-          >
-            {[
-              { number: "50K+", label: "Happy Users" },
-              { number: "1M+", label: "Try-Ons" },
-              { number: "500+", label: "Fashion Items" },
-              { number: "95%", label: "Satisfaction" }
-            ].map((stat, index) => (
-              <motion.div key={index} variants={fadeInUp} className="text-center">
-                <motion.div
-                  initial={{ scale: 0 }}
-                  whileInView={{ scale: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: index * 0.1, duration: 0.6, ease: "backOut" }}
-                  className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2"
-                >
-                  {stat.number}
-                </motion.div>
-                <div className="text-gray-600 font-medium">{stat.label}</div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
+
+      <TestimonialsCarousel />
 
       {/* CTA Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-purple-600 to-pink-600">
@@ -224,32 +245,13 @@ export default function Home() {
               Ready to Transform Your Fashion Experience?
             </h2>
             <p className="text-xl text-purple-100 max-w-2xl mx-auto">
-              Join thousands of fashion enthusiasts who've already discovered their perfect style with VisionX.
+              Join thousands of fashion enthusiasts who&apos;ve already discovered their perfect style with VisionX.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/try-on">
-                <Button 
-                  size="lg" 
-                  className="bg-white text-purple-600 hover:bg-gray-100 font-semibold px-8 py-4 rounded-full shadow-lg hover:shadow-xl transition-all"
-                >
-                  <Camera className="mr-2 h-5 w-5" />
-                  Try Now - It's Free
-                </Button>
-              </Link>
-              
-              <Link href="/how-it-works">
-                <Button 
-                  variant="outline" 
-                  size="lg"
-                  className="border-2 border-white text-white hover:bg-white hover:text-purple-600 font-semibold px-8 py-4 rounded-full transition-all"
-                >
-                  Learn How It Works
-                </Button>
-              </Link>
-            </div>
+            
           </motion.div>
         </div>
       </section>
+      <SocialLinks />
     </div>
   );
 }

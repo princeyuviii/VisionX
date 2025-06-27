@@ -204,13 +204,20 @@ export default function HowItWorksPage() {
           </motion.div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map((feature, index) => (
+            {[
+              "AI-powered fashion chatbot for outfit suggestions and trend queries",
+              "Real-time AR-based outfit try-on through camera integration",
+              "Join a growing community of creators, stylists, and fashion lovers",
+              "One-click shop integration with fit-matching and style preference",
+              "Interactive dashboard to track the lastest fashion trends",
+              "Publish & share public fashion profiles with style ratings and feedback",
+            ].map((feature, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
+                transition={{ delay: index * 0.05 }}
                 whileHover={{ scale: 1.05 }}
                 className="flex items-center space-x-3 p-4 bg-white/60 backdrop-blur-sm rounded-lg shadow-md hover:shadow-lg transition-shadow"
               >
@@ -221,42 +228,64 @@ export default function HowItWorksPage() {
           </div>
         </section>
 
-        {/* Stats Section */}
-        <section className="mb-20">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-              Performance Metrics
-            </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Industry-leading performance that powers your fashion experience
-            </p>
-          </motion.div>
+        {/* Monetization & Integration Opportunities */}
+        <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white/60 backdrop-blur-sm">
+          <div className="max-w-7xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center mb-12"
+            >
+              <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+                Monetize with VisionX: Built for Business
+              </h2>
+              <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+                Turn VisionX into a profit machine — integrate, license, or white-label it across multiple platforms.
+              </p>
+            </motion.div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-            {stats.map((stat, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, scale: 0.8 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1, duration: 0.6, ease: "backOut" }}
-              >
-                <Card className="text-center shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-                  <CardContent className="p-6">
-                    <div className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
-                      {stat.number}
-                    </div>
-                    <div className="font-semibold text-gray-900 mb-2">{stat.label}</div>
-                    <div className="text-sm text-gray-600">{stat.description}</div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[
+                {
+                  title: "Integrate with Marketplaces",
+                  desc: "Enable virtual try-on for Amazon, Flipkart, or Myntra listings using VisionX AR engine.",
+                },
+                {
+                  title: "Offer as a SaaS to D2C Brands",
+                  desc: "Fashion startups & clothing brands can embed VisionX on their own websites for live try-ons & style AI.",
+                },
+                {
+                  title: "AI Chatbot for E-commerce",
+                  desc: "Use our trained chatbot in retail stores for smart search, queries, and customer fashion help.",
+                },
+                {
+                  title: "Fashion Recommendation API",
+                  desc: "License the AI engine behind VisionX to third parties via API access — from salons to stylists.",
+                },
+                {
+                  title: "Sell VisionX as a White-Label App",
+                  desc: "Rebrand and sell to institutions, fashion schools, stylists, or influencers with your own logo.",
+                },
+                {
+                  title: "Affiliate & Brand Collaborations",
+                  desc: "Link products inside VisionX to affiliate stores and earn revenue per sale or styling suggestion.",
+                },
+              ].map((feature, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.1 }}
+                  whileHover={{ scale: 1.05 }}
+                  className="p-6 bg-white rounded-xl shadow-md hover:shadow-xl transition-all border border-gray-200"
+                >
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">{feature.title}</h3>
+                  <p className="text-gray-600 text-sm">{feature.desc}</p>
+                </motion.div>
+              ))}
+            </div>
           </div>
         </section>
 
@@ -281,7 +310,7 @@ export default function HowItWorksPage() {
               </Button>
             </Link>
             <Link href="/recommend">
-              <Button variant="outline" size="lg" className="border-2 border-white text-white hover:bg-white hover:text-purple-600 font-semibold px-8 py-3 rounded-full">
+              <Button size="lg" className="bg-white text-purple-600 hover:bg-gray-100 font-semibold px-8 py-3 rounded-full">
                 <Sparkles className="mr-2 h-5 w-5" />
                 Get AI Recommendations
               </Button>
