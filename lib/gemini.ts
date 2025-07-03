@@ -1,38 +1,15 @@
-// lib/gemini.ts
-const dotenv = require('dotenv');
-dotenv.config();
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// lib/gemini.ts
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
-export const sendToGemini = async (userPrompt: string) => {
-  const apiKey = process.env.GEMINI_API_KEY;
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
-
+export async function sendToGemini(prompt: string): Promise<string> {
   try {
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [{ text: userPrompt }],
-          },
-        ],
-      }),
-    });
-
-    const data = await res.json();
-
-    const aiText =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text ||
-      '⚠️ Sorry, Gemini could not generate a response.';
-
-    return aiText;
-  } catch (error) {
-    console.error('Gemini API error:', error);
-    return '⚠️ Failed to contact Gemini API. Please try again.';
+    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    return response.text();
+  } catch (err) {
+    console.error('Gemini API Error:', err);
+    return 'Sorry, I couldn’t process your request right now.';
   }
-};
-
+}

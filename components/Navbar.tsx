@@ -3,13 +3,21 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Camera, Sparkles, Info, MessageSquare, Users, User, LogIn, LogOut } from 'lucide-react';
+import {
+  Menu, X, Camera, Sparkles, Info, Users, LogIn
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
+
+import {
+  SignedIn,
+  SignedOut,
+  SignInButton,
+  UserButton
+} from '@clerk/nextjs';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // This will be connected to Clerk
 
   useEffect(() => {
     const handleScroll = () => {
@@ -20,30 +28,18 @@ const Navbar = () => {
   }, []);
 
   const navItems = [
-    { href: '/', label: 'Home', icon: Sparkles },
     { href: '/try-on', label: 'Try-On', icon: Camera },
     { href: '/recommend', label: 'Recommend', icon: Sparkles },
     { href: '/community', label: 'Community', icon: Users },
     { href: '/how-it-works', label: 'How it Works', icon: Info },
   ];
 
-  const handleAuthAction = () => {
-    // This will be connected to Clerk authentication
-    if (isLoggedIn) {
-      // Sign out logic
-      setIsLoggedIn(false);
-    } else {
-      // Sign in logic
-      setIsLoggedIn(true);
-    }
-  };
-
   return (
     <motion.nav
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled 
+        scrolled
           ? 'bg-white/90 backdrop-blur-lg border-b border-gray-200/20 shadow-lg'
           : 'bg-transparent'
       }`}
@@ -80,31 +76,20 @@ const Navbar = () => {
             ))}
           </div>
 
-          {/* Desktop Auth & CTA */}
+          {/* Desktop Auth */}
           <div className="hidden md:flex items-center space-x-3">
-            <Button
-              onClick={handleAuthAction}
-              variant="ghost"
-              className="flex items-center space-x-2 text-gray-700 hover:text-purple-600"
-            >
-              {isLoggedIn ? (
-                <>
-                  <User className="h-4 w-4" />
-                  <span>Profile</span>
-                </>
-              ) : (
-                <>
+            <SignedOut>
+              <SignInButton>
+                <Button variant="ghost" className="flex items-center space-x-2 text-gray-700 hover:text-purple-600">
                   <LogIn className="h-4 w-4" />
                   <span>Sign In</span>
-                </>
-              )}
-            </Button>
+                </Button>
+              </SignInButton>
+            </SignedOut>
 
-            <Link href="/try-on">
-              <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium px-6 py-2 rounded-full shadow-lg hover:shadow-xl transition-all">
-                Start Try-On
-              </Button>
-            </Link>
+            <SignedIn>
+              <UserButton afterSignOutUrl="/" />
+            </SignedIn>
           </div>
 
           {/* Mobile menu button */}
@@ -139,34 +124,26 @@ const Navbar = () => {
                   </motion.div>
                 </Link>
               ))}
-              
+
               <div className="pt-4 border-t border-gray-200 space-y-2">
-                <Button
-                  onClick={() => {
-                    handleAuthAction();
-                    setIsOpen(false);
-                  }}
-                  variant="ghost"
-                  className="w-full justify-start text-gray-700 hover:text-purple-600"
-                >
-                  {isLoggedIn ? (
-                    <>
-                      <User className="h-5 w-5 mr-3" />
-                      <span>Profile</span>
-                    </>
-                  ) : (
-                    <>
+                <SignedOut>
+                  <SignInButton>
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start text-gray-700 hover:text-purple-600"
+                      onClick={() => setIsOpen(false)}
+                    >
                       <LogIn className="h-5 w-5 mr-3" />
                       <span>Sign In</span>
-                    </>
-                  )}
-                </Button>
+                    </Button>
+                  </SignInButton>
+                </SignedOut>
 
-                <Link href="/try-on" onClick={() => setIsOpen(false)}>
-                  <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium py-3 rounded-full">
-                    Start Try-On
-                  </Button>
-                </Link>
+                <SignedIn>
+                  <div className="flex items-center px-4">
+                    <UserButton afterSignOutUrl="/" />
+                  </div>
+                </SignedIn>
               </div>
             </div>
           </motion.div>

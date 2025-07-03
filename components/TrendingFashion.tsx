@@ -21,7 +21,7 @@ const fashionItems = [
     id: 2,
     title: "Streetwear Vibes",
     category: "Urban",
-    image: "https://images.pexels.com/photos/1021693/pexels-photo-1021693.jpeg",
+    image: "https://i.pinimg.com/736x/1e/6f/ae/1e6faee67a38cccd464e3bcd6a073513.jpg",
     description: "Bold graphics and contemporary cuts",
     likes: 890,
     views: 3420
@@ -39,7 +39,7 @@ const fashionItems = [
     id: 4,
     title: "Boho Chic",
     category: "Artistic",
-    image: "https://images.pexels.com/photos/1587976/pexels-photo-1587976.jpeg",
+    image: "https://femina.wwmindia.com/content/2019/aug/thfashion1566373692.jpg",
     description: "Free-spirited patterns and flowing silhouettes",
     likes: 1680,
     views: 6230
@@ -88,7 +88,7 @@ const TrendingFashion = () => {
       onMouseLeave={() => setIsPaused(false)}
     >
       {/* Main Carousel */}
-      <div className="relative h-96 md:h-[500px] rounded-2xl overflow-hidden shadow-2xl">
+      <div className="relative h-screen max-h-[800px] rounded-2xl overflow-hidden shadow-2xl">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentIndex}
@@ -181,28 +181,7 @@ const TrendingFashion = () => {
         ))}
       </div>
 
-      {/* Thumbnail Preview */}
-      <div className="grid grid-cols-5 gap-4 mt-8">
-        {fashionItems.map((item, index) => (
-          <motion.div
-            key={item.id}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => goToSlide(index)}
-            className={`cursor-pointer rounded-lg overflow-hidden transition-all duration-300 ${
-              index === currentIndex 
-                ? 'ring-4 ring-purple-500 shadow-lg' 
-                : 'opacity-70 hover:opacity-100'
-            }`}
-          >
-            <img 
-              src={item.image} 
-              alt={item.title}
-              className="w-full h-20 object-cover"
-            />
-          </motion.div>
-        ))}
-      </div>
+      
     </div>
   );
 };

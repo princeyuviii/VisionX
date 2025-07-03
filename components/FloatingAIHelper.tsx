@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { sendToGemini } from '@/lib/gemini';
+import { sendToOllama } from '@/lib/sendToOllama';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, X, Sparkles, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,7 @@ const FloatingAIHelper = () => {
   const [messages, setMessages] = useState([
     {
       id: 1,
-      text: "Hi! I'm your AI Style Assistant. I can help you find the perfect fashion style, recommend trending outfits, or answer any questions about our try-on platform. What would you like to know?",
+      text: "Hi! I'm your AI Style Assistant for VisionX. Ask me about outfit suggestions, virtual try-ons, skin-tone based fashion, or anything related to your look!",
       isAI: true
     }
   ]);
@@ -32,7 +32,10 @@ const FloatingAIHelper = () => {
     setMessage('');
 
     try {
-      const aiText = await sendToGemini("Suggest 3 fashion style for beach");
+      const prompt = `You are an AI fashion stylist named VisionX. A user just asked: "${message}".
+Please provide helpful, relevant fashion advice — such as outfit suggestions, style tips, skin-tone-based clothing, or virtual try-on ideas. Keep it short, stylish, and user-friendly.`;
+
+      const aiText = await sendToOllama(prompt);
 
       const aiResponse = {
         id: messages.length + 2,
