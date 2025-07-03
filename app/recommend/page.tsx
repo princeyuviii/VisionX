@@ -369,7 +369,8 @@ export default function RecommendPage() {
   }
 
   const trendingItems = latestFashionTrends.filter((item) => item.trending)
-  const allItems = latestFashionTrends
+  function FashionComponent() {
+    const allItems = latestFashionTrends;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 pt-20 pb-8">
@@ -1166,4 +1167,5 @@ export default function RecommendPage() {
       </div>
     </div>
   )
+}
 }

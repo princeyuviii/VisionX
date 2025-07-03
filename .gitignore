@@ -36,10 +36,10 @@ yarn-error.log*
 next-env.d.ts
 
 # Python virtual environments
-/venv/
-/env/
-/myenv/
-/.myenv/
+/tfenv/
+/tfenv/
+/tfenv/
+/.tfenv/
 
 /__pycache__/
 /*.py[cod]

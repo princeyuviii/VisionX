@@ -160,6 +160,7 @@ const quickTryItems = [
 
 export default function TryOnPage() {
   const [isStreaming, setIsStreaming] = useState(false);
+  const [processedFrame, setProcessedFrame] = useState<string | null>(null);
   const [selectedItems, setSelectedItems] = useState<any[]>([]);
   const [activeCategory, setActiveCategory] = useState("Tops");
   const [opacity, setOpacity] = useState([80]);
@@ -183,6 +184,18 @@ export default function TryOnPage() {
       stopCamera();
     }
   }, [isStreaming]);
+
+  useEffect(() => {
+  let interval: NodeJS.Timeout;
+
+  if (isStreaming) {
+    interval = setInterval(() => {
+      sendFrameForTryOn();
+    }, 1000); // every second
+  }
+  return () => clearInterval(interval);
+  }, [isStreaming, selectedItems]);
+
 
   const startCamera = async () => {
     try {
@@ -284,6 +297,43 @@ export default function TryOnPage() {
       }
     }
   };
+
+  const sendFrameForTryOn = async () => {
+  if (!videoRef.current || !canvasRef.current) return;
+  const ctx = canvasRef.current.getContext("2d");
+  if (!ctx) return;
+
+  canvasRef.current.width = videoRef.current.videoWidth;
+  canvasRef.current.height = videoRef.current.videoHeight;
+  ctx.drawImage(videoRef.current, 0, 0);
+  const base64Frame = canvasRef.current.toDataURL("image/jpeg");
+
+  const shirt = selectedItems.find(item => item.type === "shirt" || item.type === "tshirt" || item.type === "hoodie");
+  const pant = selectedItems.find(item => item.type === "pant");
+
+  try {
+    const response = await fetch("http://localhost:8000/tryon", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        image: base64Frame,
+        shirtUrl: shirt?.image || null,
+        pantUrl: pant?.image || null
+      }),
+    });
+
+    const data = await response.json();
+    setProcessedFrame(data.processedImage);
+  } catch (err) {
+    console.error("Processing error:", err);
+    toast({
+      title: "Try-On Failed",
+      description: "Could not overlay items. Try again.",
+      variant: "destructive"
+    });
+  }
+};
+
 
   const resetSelection = () => {
     setSelectedItems([]);
@@ -396,6 +446,14 @@ export default function TryOnPage() {
                       muted
                       className="w-full h-full object-cover"
                     />
+
+                    {processedFrame && (
+                      <img
+                        src={processedFrame}
+                        alt="Virtual Try-On Result"
+                        className="absolute top-0 left-0 w-full h-full object-cover pointer-events-none"
+                      />
+                    )}
                     
                     {/* Fashion Overlays */}
                     <AnimatePresence>
