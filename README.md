@@ -1,4 +1,4 @@
-# 👓 VisionX - Try Before You Buy (Virtually)
+#  VisionX - Try Before You Buy (Virtually)
 
 > 💡 *Fashion meets AR + AI.* VisionX is your all-in-one **virtual try-on platform** that lets users instantly try clothes, accessories, and fashion trends in real time — just like Snapchat filters, but for outfits.
 
