@@ -5,7 +5,7 @@
 ---
 
 ## 🚀 Live Demo (Coming Soon)
-🎯 VisionX(https://visionx.vercel.app/) — *(Under Development)*  
+🎯 [VisionX](https://visionx.vercel.app/) — *(Under Development)*  
 🛠️ Built for: **AI ML Hackathon 2.0 - Parul University**
 
 ---
