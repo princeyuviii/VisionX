@@ -1,4 +1,4 @@
-# VisionX // Neural_Synthesis_Fashion_Platform
+# VisionX
 
 ![VisionX Banner](https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=2070&auto=format&fit=crop)
 
@@ -146,10 +146,4 @@ VisionX/
 
 ---
 
-## 📜 License
-
-Distributed under the MIT License. See `LICENSE` for more information.
-
----
-
-**Developed by [Prince Yuvraj Singh Rathore](https://github.com/princeyuviii)** // **VisionX Development Division**
+**Developed by [Yuvraj Singh Rathore](https://github.com/princeyuviii)** // **VisionX Development Division**
