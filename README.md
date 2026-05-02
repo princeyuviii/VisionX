@@ -146,4 +146,4 @@ VisionX/
 
 ---
 
-**Developed by [Yuvraj Singh Rathore](https://github.com/princeyuviii)** // **VisionX Development Division**
+**Developed by [Yuvraj Singh Rathore](https://github.com/princeyuviii)** 
