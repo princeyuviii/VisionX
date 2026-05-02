@@ -2,18 +2,22 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, Camera, Filter, Search, TrendingUp, Users, Eye, Plus } from 'lucide-react';
+import { 
+  Filter, Search, Plus
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import Link from 'next/link';
+import { useUser } from '@clerk/nextjs';
+import { toast } from 'sonner';
 
-const communityPosts = [
+import { PostCard } from '@/components/community/PostCard';
+import { CommunitySidebar } from '@/components/community/CommunitySidebar';
+import { CommunityPost, TrendingStyle } from '@/types/fashion';
+
+const staticPosts: CommunityPost[] = [
   {
     id: 1,
     user: {
@@ -70,48 +74,10 @@ const communityPosts = [
     tags: ["#Boho", "#FreeSpirit", "#Dreamy"],
     isLiked: false,
     isBookmarked: true
-  },
-  {
-    id: 4,
-    user: {
-      name: "Marcus Tech",
-      username: "@marcustech",
-      avatar: "https://images.pexels.com/photos/1040945/pexels-photo-1040945.jpeg",
-      verified: false
-    },
-    image: "https://images.pexels.com/photos/1036622/pexels-photo-1036622.jpeg",
-    caption: "Future is now. Techcore aesthetic with functional design meets style 🚀",
-    style: "Techcore",
-    likes: 1567,
-    comments: 89,
-    shares: 234,
-    timeAgo: "8h",
-    tags: ["#Techcore", "#Future", "#Functional"],
-    isLiked: true,
-    isBookmarked: false
-  },
-  {
-    id: 5,
-    user: {
-      name: "Isabella Grace",
-      username: "@bellagrace",
-      avatar: "https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg",
-      verified: true
-    },
-    image: "https://images.pexels.com/photos/1040945/pexels-photo-1040945.jpeg",
-    caption: "Minimalist Monday mood 🤍 Less is always more when it comes to timeless elegance",
-    style: "Minimalist",
-    likes: 2234,
-    comments: 167,
-    shares: 78,
-    timeAgo: "12h",
-    tags: ["#Minimalist", "#Clean", "#Timeless"],
-    isLiked: false,
-    isBookmarked: true
   }
 ];
 
-const trendingStyles = [
+const trendingStyles: TrendingStyle[] = [
   { name: "Old Money", count: "12.5K", growth: "+15%" },
   { name: "Streetwear", count: "8.9K", growth: "+23%" },
   { name: "Techcore", count: "6.2K", growth: "+45%" },
@@ -120,344 +86,289 @@ const trendingStyles = [
 ];
 
 export default function CommunityPage() {
-  const [posts, setPosts] = useState(communityPosts);
+  const { user } = useUser();
+  const [posts, setPosts] = useState<CommunityPost[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("trending");
   const [searchQuery, setSearchQuery] = useState("");
   const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
-  const [newPost, setNewPost] = useState({ caption: "", style: "", image: null });
+  const [newPost, setNewPost] = useState({ caption: "", style: "Old Money", image: "" });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [timeLeft, setTimeLeft] = useState("02d 14h 52m 10s");
 
-  const handleLike = (postId: number) => {
-    setPosts(prev => prev.map(post => 
-      post.id === postId 
-        ? { 
-            ...post, 
-            isLiked: !post.isLiked,
-            likes: post.isLiked ? post.likes - 1 : post.likes + 1
-          }
-        : post
-    ));
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = new Date();
+      const s = 60 - now.getSeconds();
+      const m = 60 - now.getMinutes();
+      const h = 24 - now.getHours();
+      setTimeLeft(`02d ${h.toString().padStart(2, '0')}h ${m.toString().padStart(2, '0')}m ${s.toString().padStart(2, '0')}s`);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    fetchPosts();
+  }, []);
+
+  const fetchPosts = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch('/api/posts');
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setPosts(data.length > 0 ? data : staticPosts);
+      } else {
+        setPosts(staticPosts);
+      }
+    } catch (error) {
+      console.error("Failed to fetch posts:", error);
+      setPosts(staticPosts);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleBookmark = (postId: number) => {
-    setPosts(prev => prev.map(post => 
-      post.id === postId 
+  const handleCreatePost = async () => {
+    if (!user) {
+      toast.error("Please sign in to share your style");
+      return;
+    }
+
+    if (!newPost.caption || !newPost.image) {
+      toast.error("Please provide a caption and image URL");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const postData = {
+        user: {
+          name: user.fullName || user.username || "Anonymous",
+          avatar: user.imageUrl,
+          clerkId: user.id
+        },
+        image: newPost.image,
+        caption: newPost.caption,
+        style: newPost.style,
+        tags: [newPost.style.startsWith('#') ? newPost.style : `#${newPost.style.replace(/\s+/g, '')}`]
+      };
+
+      const res = await fetch('/api/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(postData)
+      });
+
+      if (res.ok) {
+        toast.success("Style shared with the community!");
+        setIsCreatePostOpen(false);
+        setNewPost({ caption: "", style: "Old Money", image: "" });
+        fetchPosts();
+      }
+    } catch (error) {
+      toast.error("Failed to share style");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleLike = async (postId: string | number) => {
+    setPosts(prev => prev.map(post => {
+      if (post._id === postId || post.id === postId) {
+        const isLiked = post.isLiked;
+        return { 
+          ...post, 
+          likes: isLiked ? post.likes - 1 : post.likes + 1, 
+          isLiked: !isLiked 
+        };
+      }
+      return post;
+    }));
+
+    try {
+      const post = posts.find(p => p._id === postId || p.id === postId);
+      await fetch('/api/posts', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: postId,
+          action: post?.isLiked ? 'unlike' : 'like'
+        })
+      });
+    } catch (error) {
+      console.error("Failed to update post like:", error);
+    }
+  };
+
+  const handleBookmark = (postId: string | number) => {
+    setPosts(prev => prev.map(post =>
+      (post._id === postId || post.id === postId)
         ? { ...post, isBookmarked: !post.isBookmarked }
         : post
     ));
   };
 
-  const filteredPosts = posts.filter(post => 
-    post.caption.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    post.user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    post.style.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredPosts = posts.filter(post =>
+    (post.caption || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (post.user?.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (post.style || "").toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 pt-20 pb-8">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8"
-        >
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-            Fashion Community
-          </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-6">
-            Share your style, discover trends, and connect with fashion enthusiasts worldwide
-          </p>
-          
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8">
+    <div className="min-h-screen bg-background relative overflow-hidden pt-32 pb-16 px-4 font-sans">
+      <div className="absolute inset-0 cyber-grid opacity-10 -z-10" />
+      
+      <div className="max-w-7xl mx-auto space-y-12">
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row justify-between items-end gap-8 border-b border-white/5 pb-12">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="space-y-4"
+          >
+            <div className="flex items-center gap-4">
+              <Badge className="bg-primary text-black font-black text-[8px] uppercase tracking-[0.3em] rounded-none px-3 py-1">Global_Sync</Badge>
+              <div className="h-px w-24 bg-white/10" />
+              <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">Active_Nodes: 125,482</span>
+            </div>
+            <h1 className="text-6xl font-black tracking-tighter uppercase italic leading-none">
+              Style<span className="text-primary text-glow-amber">_Community</span>
+            </h1>
+            <p className="text-xs font-mono text-zinc-500 uppercase tracking-[0.4em] max-w-xl">
+              Cross-referenced fashion archives // Synchronize your aesthetic with the global neural network.
+            </p>
+          </motion.div>
+
+          <div className="flex items-center gap-6">
             <Dialog open={isCreatePostOpen} onOpenChange={setIsCreatePostOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold px-6 py-3 rounded-full">
-                  <Plus className="mr-2 h-5 w-5" />
-                  Share Your Style
+                <Button className="bg-white text-black hover:bg-primary hover:text-black font-black text-[10px] uppercase tracking-[0.4em] rounded-none px-10 py-8 h-auto shadow-[0_0_50px_rgba(251,191,36,0.1)] transition-all">
+                  <Plus className="mr-3 h-5 w-5" />
+                  Upload_Archive
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Share Your Fashion Style</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Upload Photo
-                    </label>
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-purple-400 transition-colors cursor-pointer">
-                      <Camera className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                      <p className="text-sm text-gray-500">Click to upload or drag and drop</p>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Style Category
-                    </label>
-                    <select className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
-                      <option>Select Style</option>
-                      <option>Old Money</option>
-                      <option>Streetwear</option>
-                      <option>Bohemian</option>
-                      <option>Techcore</option>
-                      <option>Minimalist</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Caption
-                    </label>
-                    <Textarea 
-                      placeholder="Share your style story..."
-                      className="min-h-[100px]"
+              <DialogContent className="bg-zinc-950 border-white/10 rounded-none max-w-xl p-0 overflow-hidden">
+                <div className="bg-primary/10 border-b border-primary/20 p-6 flex items-center justify-between">
+                   <h3 className="text-xs font-black uppercase tracking-[0.3em]">Neural_Archive_Submission</h3>
+                   <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+                      <span className="text-[8px] font-mono uppercase text-primary">Status: Ready</span>
+                   </div>
+                </div>
+                <div className="p-10 space-y-8">
+                  <div className="space-y-4">
+                    <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">Image_Source_URL</label>
+                    <Input
+                      placeholder="HTTPS://SOURCE.IMG/DATA..."
+                      className="bg-white/5 border-white/10 text-white rounded-none font-mono text-[11px] h-12 focus:border-primary/50"
+                      value={newPost.image}
+                      onChange={(e) => setNewPost({ ...newPost, image: e.target.value })}
                     />
                   </div>
-                  <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white">
-                    Share Post
+                  <div className="grid grid-cols-2 gap-8">
+                     <div className="space-y-4">
+                        <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">Style_Protocol</label>
+                        <select
+                          className="w-full p-4 bg-white/5 border border-white/10 text-white rounded-none font-mono text-[11px] uppercase tracking-widest appearance-none focus:border-primary/50"
+                          value={newPost.style}
+                          onChange={(e) => setNewPost({ ...newPost, style: e.target.value })}
+                        >
+                          {trendingStyles.map(s => <option key={s.name}>{s.name}</option>)}
+                        </select>
+                     </div>
+                     <div className="space-y-4">
+                        <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">Security_Token</label>
+                        <Input disabled placeholder="V-AUTH-0482" className="bg-white/5 border-white/10 text-zinc-600 rounded-none font-mono text-[11px] h-12" />
+                     </div>
+                  </div>
+                  <div className="space-y-4">
+                    <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">Archive_Caption</label>
+                    <Textarea
+                      placeholder="INPUT_DESCRIPTION_DATA..."
+                      className="bg-white/5 border-white/10 text-white rounded-none font-mono text-[11px] min-h-[120px] focus:border-primary/50"
+                      value={newPost.caption}
+                      onChange={(e) => setNewPost({ ...newPost, caption: e.target.value })}
+                    />
+                  </div>
+                  <Button
+                    className="w-full bg-primary text-black hover:bg-white transition-all font-black py-8 rounded-none uppercase tracking-[0.4em] text-[10px] shadow-2xl"
+                    onClick={handleCreatePost}
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? "UPLOADING_DATA..." : "DEPLOY_TO_COMMUNITY"}
                   </Button>
                 </div>
               </DialogContent>
             </Dialog>
-            
-            <Link href="/try-on">
-              <Button variant="outline" className="border-2 border-purple-200 hover:border-purple-300 text-purple-700 hover:bg-purple-50 font-semibold px-6 py-3 rounded-full">
-                <Camera className="mr-2 h-5 w-5" />
-                Try Virtual Styling
-              </Button>
-            </Link>
           </div>
-        </motion.div>
+        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
           {/* Main Content */}
-          <div className="lg:col-span-3 space-y-6">
-            {/* Search and Filters */}
-            <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-              <CardContent className="p-6">
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input
-                      placeholder="Search styles, users, or hashtags..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10 rounded-full border-gray-200 focus:border-purple-300"
-                    />
-                  </div>
-                  <Button variant="outline" className="rounded-full">
-                    <Filter className="mr-2 h-4 w-4" />
-                    Filters
-                  </Button>
+          <div className="lg:col-span-3 space-y-10">
+            {/* Search and Filters HUD */}
+            <div className="bg-zinc-950 border border-white/10 p-6 space-y-6 shadow-2xl">
+              <div className="flex flex-col sm:flex-row gap-6">
+                <div className="flex-1 relative group">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-600 group-hover:text-primary transition-colors" />
+                  <Input
+                    placeholder="SEARCH_STYLE_DNA / USER_NODE / HASHTAG..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="bg-white/5 border-white/5 rounded-none pl-12 h-14 font-mono text-[10px] tracking-widest uppercase focus:border-primary/40 focus:ring-0 transition-all"
+                  />
                 </div>
-                
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
-                  <TabsList className="grid w-full grid-cols-4">
-                    <TabsTrigger value="trending">Trending</TabsTrigger>
-                    <TabsTrigger value="following">Following</TabsTrigger>
-                    <TabsTrigger value="recent">Recent</TabsTrigger>
-                    <TabsTrigger value="saved">Saved</TabsTrigger>
-                  </TabsList>
-                </Tabs>
-              </CardContent>
-            </Card>
+                <Button variant="outline" className="h-14 px-8 border-white/5 rounded-none text-[10px] font-black uppercase tracking-widest hover:border-primary/40 transition-all">
+                  <Filter className="mr-3 h-4 w-4" />
+                  Protocol_Filters
+                </Button>
+              </div>
+
+              <div className="flex items-center gap-12 overflow-x-auto no-scrollbar border-t border-white/5 pt-6">
+                {['Trending', 'Following', 'Recent', 'Saved'].map((tab) => (
+                  <button 
+                    key={tab}
+                    onClick={() => setActiveTab(tab.toLowerCase())}
+                    className={`text-[10px] font-black uppercase tracking-[0.3em] transition-all pb-2 ${activeTab === tab.toLowerCase() ? 'text-primary border-b-2 border-primary' : 'text-zinc-600 hover:text-white'}`}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+            </div>
 
             {/* Posts Feed */}
             <div className="space-y-6">
-              <AnimatePresence>
-                {filteredPosts.map((post, index) => (
+              {loading ? (
+                <div className="flex flex-col items-center justify-center py-20 space-y-4">
                   <motion.div
-                    key={post.id}
-                    initial={{ opacity: 0, y: 40 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -40 }}
-                    transition={{ delay: index * 0.1 }}
-                  >
-                    <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm overflow-hidden">
-                      {/* Post Header */}
-                      <CardHeader className="pb-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            <Avatar className="h-10 w-10">
-                              <AvatarImage src={post.user.avatar} />
-                              <AvatarFallback>{post.user.name[0]}</AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <div className="flex items-center space-x-2">
-                                <h3 className="font-semibold text-gray-900">{post.user.name}</h3>
-                                {post.user.verified && (
-                                  <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
-                                    <div className="w-2 h-2 bg-white rounded-full" />
-                                  </div>
-                                )}
-                              </div>
-                              <p className="text-sm text-gray-500">{post.user.username} • {post.timeAgo}</p>
-                            </div>
-                          </div>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </CardHeader>
-
-                      <CardContent className="p-0">
-                        {/* Post Image */}
-                        <div className="relative aspect-square bg-gray-100">
-                          <img 
-                            src={post.image} 
-                            alt={post.caption}
-                            className="w-full h-full object-cover"
-                          />
-                          <div className="absolute top-4 right-4">
-                            <Badge className="bg-white/90 text-gray-700 backdrop-blur-sm">
-                              {post.style}
-                            </Badge>
-                          </div>
-                        </div>
-
-                        {/* Post Actions */}
-                        <div className="p-4">
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center space-x-4">
-                              <motion.button
-                                whileTap={{ scale: 0.9 }}
-                                onClick={() => handleLike(post.id)}
-                                className="flex items-center space-x-2 text-gray-600 hover:text-red-500 transition-colors"
-                              >
-                                <Heart className={`h-6 w-6 ${post.isLiked ? 'fill-red-500 text-red-500' : ''}`} />
-                                <span className="font-medium">{post.likes.toLocaleString()}</span>
-                              </motion.button>
-                              
-                              <button className="flex items-center space-x-2 text-gray-600 hover:text-blue-500 transition-colors">
-                                <MessageCircle className="h-6 w-6" />
-                                <span className="font-medium">{post.comments}</span>
-                              </button>
-                              
-                              <button className="flex items-center space-x-2 text-gray-600 hover:text-green-500 transition-colors">
-                                <Share2 className="h-6 w-6" />
-                                <span className="font-medium">{post.shares}</span>
-                              </button>
-                            </div>
-                            
-                            <motion.button
-                              whileTap={{ scale: 0.9 }}
-                              onClick={() => handleBookmark(post.id)}
-                              className="text-gray-600 hover:text-purple-500 transition-colors"
-                            >
-                              <Bookmark className={`h-6 w-6 ${post.isBookmarked ? 'fill-purple-500 text-purple-500' : ''}`} />
-                            </motion.button>
-                          </div>
-
-                          {/* Post Caption */}
-                          <div className="space-y-2">
-                            <p className="text-gray-800">{post.caption}</p>
-                            <div className="flex flex-wrap gap-2">
-                              {post.tags.map((tag, tagIndex) => (
-                                <span key={tagIndex} className="text-purple-600 text-sm hover:underline cursor-pointer">
-                                  {tag}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Try This Style Button */}
-                          <Link href="/try-on">
-                            <Button className="w-full mt-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-full">
-                              Try This Style
-                            </Button>
-                          </Link>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full"
+                  />
+                  <p className="text-muted-foreground animate-pulse">Loading fashion feed...</p>
+                </div>
+              ) : (
+                <AnimatePresence>
+                  {filteredPosts.map((post, index) => (
+                    <PostCard 
+                      key={post._id || post.id} 
+                      post={post} 
+                      index={index} 
+                      onLike={handleLike} 
+                      onBookmark={handleBookmark} 
+                    />
+                  ))}
+                </AnimatePresence>
+              )}
             </div>
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Trending Styles */}
-            <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-              <CardHeader>
-                <div className="flex items-center space-x-2">
-                  <TrendingUp className="h-5 w-5 text-purple-600" />
-                  <h3 className="font-semibold text-gray-900">Trending Styles</h3>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {trendingStyles.map((style, index) => (
-                  <motion.div
-                    key={style.name}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-purple-50 transition-colors cursor-pointer"
-                  >
-                    <div>
-                      <h4 className="font-medium text-gray-900">{style.name}</h4>
-                      <p className="text-sm text-gray-500">{style.count} posts</p>
-                    </div>
-                    <Badge variant="secondary" className="bg-green-100 text-green-700">
-                      {style.growth}
-                    </Badge>
-                  </motion.div>
-                ))}
-              </CardContent>
-            </Card>
-
-            {/* Community Stats */}
-            <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-              <CardHeader>
-                <div className="flex items-center space-x-2">
-                  <Users className="h-5 w-5 text-purple-600" />
-                  <h3 className="font-semibold text-gray-900">Community Stats</h3>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-purple-600">125K+</div>
-                  <div className="text-sm text-gray-500">Active Members</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-pink-600">2.3M+</div>
-                  <div className="text-sm text-gray-500">Styles Shared</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-orange-600">45K+</div>
-                  <div className="text-sm text-gray-500">Daily Try-Ons</div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Suggested Users */}
-            <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-              <CardHeader>
-                <h3 className="font-semibold text-gray-900">Suggested for You</h3>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {[
-                  { name: "Fashion Forward", username: "@fashionforward", followers: "12.5K" },
-                  { name: "Style Maven", username: "@stylemaven", followers: "8.9K" },
-                  { name: "Trend Setter", username: "@trendsetter", followers: "15.2K" }
-                ].map((user, index) => (
-                  <div key={index} className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback>{user.name[0]}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-900">{user.name}</h4>
-                        <p className="text-xs text-gray-500">{user.followers} followers</p>
-                      </div>
-                    </div>
-                    <Button size="sm" variant="outline" className="text-xs">
-                      Follow
-                    </Button>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
+          <div className="lg:col-span-1">
+            <CommunitySidebar trendingStyles={trendingStyles} timeLeft={timeLeft} />
           </div>
         </div>
       </div>

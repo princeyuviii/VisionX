@@ -2,72 +2,42 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Heart, Eye } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Heart, Eye, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import Link from 'next/link';
 
 const fashionItems = [
   {
     id: 1,
-    title: "Old Money Elegance",
-    category: "Classic",
+    title: "MODERN_CLASSIC",
+    category: "SARTORIAL",
     image: "https://images.pexels.com/photos/1043473/pexels-photo-1043473.jpeg",
-    description: "Timeless sophistication with neutral tones",
+    description: "TIMELESS SOPHISTICATION WITH NEUTRAL TONES. PERFECT FOR PROFESSIONAL ENVIRONMENTS.",
     likes: 1240,
     views: 5670
   },
   {
     id: 2,
-    title: "Streetwear Vibes",
-    category: "Urban",
+    title: "URBAN_STRIKE",
+    category: "STREETWEAR",
     image: "https://i.pinimg.com/736x/1e/6f/ae/1e6faee67a38cccd464e3bcd6a073513.jpg",
-    description: "Bold graphics and contemporary cuts",
+    description: "BOLD GRAPHICS AND CONTEMPORARY CUTS FOR THE MODERN CITYSCAPE.",
     likes: 890,
     views: 3420
   },
   {
     id: 3,
-    title: "Techcore Future",
-    category: "Modern",
+    title: "TECH_UTILITY",
+    category: "FUNCTIONAL",
     image: "https://images.pexels.com/photos/1040945/pexels-photo-1040945.jpeg",
-    description: "Innovative fabrics meets functional design",
+    description: "INNOVATIVE FABRICS MEETS FUNCTIONAL DESIGN. BUILT FOR PERFORMANCE.",
     likes: 2150,
     views: 8990
-  },
-  {
-    id: 4,
-    title: "Boho Chic",
-    category: "Artistic",
-    image: "https://femina.wwmindia.com/content/2019/aug/thfashion1566373692.jpg",
-    description: "Free-spirited patterns and flowing silhouettes",
-    likes: 1680,
-    views: 6230
-  },
-  {
-    id: 5,
-    title: "Minimalist Clean",
-    category: "Simple",
-    image: "https://images.pexels.com/photos/1036622/pexels-photo-1036622.jpeg",
-    description: "Less is more with perfect tailoring",
-    likes: 950,
-    views: 4100
   }
 ];
 
 const TrendingFashion = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
-
-  useEffect(() => {
-    if (isPaused) return;
-    
-    const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % fashionItems.length);
-    }, 4000);
-
-    return () => clearInterval(interval);
-  }, [isPaused]);
 
   const nextSlide = () => {
     setCurrentIndex((prev) => (prev + 1) % fashionItems.length);
@@ -77,111 +47,75 @@ const TrendingFashion = () => {
     setCurrentIndex((prev) => (prev - 1 + fashionItems.length) % fashionItems.length);
   };
 
-  const goToSlide = (index: number) => {
-    setCurrentIndex(index);
-  };
-
   return (
-    <div 
-      className="relative max-w-6xl mx-auto"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
-    >
-      {/* Main Carousel */}
-      <div className="relative h-screen max-h-[800px] rounded-2xl overflow-hidden shadow-2xl">
+    <div className="relative max-w-7xl mx-auto px-6">
+      <div className="relative h-[600px] overflow-hidden bg-zinc-950 border border-white/5">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentIndex}
-            initial={{ opacity: 0, x: 300 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -300 }}
-            transition={{ duration: 0.5, ease: "easeInOut" }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.8 }}
             className="absolute inset-0"
           >
             <div
-              className="w-full h-full bg-cover bg-center relative"
+              className="w-full h-full bg-cover bg-center relative grayscale group-hover:grayscale-0 transition-all duration-1000"
               style={{ backgroundImage: `url(${fashionItems[currentIndex].image})` }}
             >
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
               
-              {/* Content Overlay */}
-              <div className="absolute bottom-0 left-0 right-0 p-8 md:p-12 text-white">
+              <div className="absolute bottom-0 left-0 right-0 p-12 md:p-20">
                 <motion.div
-                  initial={{ opacity: 0, y: 40 }}
+                  initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2, duration: 0.6 }}
-                  className="space-y-4"
+                  className="space-y-6"
                 >
-                  <div className="inline-block px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-sm font-medium">
+                  <div className="inline-block px-4 py-1 border border-primary/30 text-[10px] font-mono tracking-[0.4em] text-primary uppercase">
                     {fashionItems[currentIndex].category}
                   </div>
                   
-                  <h3 className="text-3xl md:text-4xl font-bold">
+                  <h3 className="text-6xl md:text-8xl font-black tracking-tighter uppercase italic text-glow-premium">
                     {fashionItems[currentIndex].title}
                   </h3>
                   
-                  <p className="text-lg text-gray-200 max-w-lg">
+                  <p className="text-sm text-zinc-500 max-w-xl font-mono tracking-widest leading-relaxed uppercase italic">
                     {fashionItems[currentIndex].description}
                   </p>
                   
-                  <div className="flex items-center space-x-6 text-sm">
-                    <div className="flex items-center space-x-2">
-                      <Heart className="h-4 w-4" />
-                      <span>{fashionItems[currentIndex].likes}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Eye className="h-4 w-4" />
-                      <span>{fashionItems[currentIndex].views}</span>
-                    </div>
+                  <div className="flex gap-6 pt-6">
+                    <Link href="/try-on">
+                      <Button className="bg-primary text-black hover:bg-white transition-all font-black px-12 py-8 rounded-none text-xs uppercase tracking-[0.4em]">
+                        INITIALIZE_TRY_ON <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </Link>
                   </div>
-                  
-                  <Link href="/try-on">
-                    <Button className="bg-white text-black hover:bg-gray-100 font-semibold px-6 py-3 rounded-full mt-4">
-                      Try This Style
-                    </Button>
-                  </Link>
                 </motion.div>
               </div>
             </div>
           </motion.div>
         </AnimatePresence>
 
-        {/* Navigation Arrows */}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={prevSlide}
-          className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white border-0 rounded-full h-12 w-12"
-        >
-          <ChevronLeft className="h-6 w-6" />
-        </Button>
+        {/* Navigation */}
+        <div className="absolute top-10 right-10 flex space-x-2">
+          <button onClick={prevSlide} className="w-12 h-12 border border-white/10 flex items-center justify-center hover:border-primary transition-colors bg-black/50 backdrop-blur-xl">
+            <ChevronLeft className="h-5 w-5 text-zinc-500" />
+          </button>
+          <button onClick={nextSlide} className="w-12 h-12 border border-white/10 flex items-center justify-center hover:border-primary transition-colors bg-black/50 backdrop-blur-xl">
+            <ChevronRight className="h-5 w-5 text-zinc-500" />
+          </button>
+        </div>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={nextSlide}
-          className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white border-0 rounded-full h-12 w-12"
-        >
-          <ChevronRight className="h-6 w-6" />
-        </Button>
+        {/* Progress Dots */}
+        <div className="absolute bottom-10 right-10 flex flex-col space-y-2">
+          {fashionItems.map((_, index) => (
+            <div 
+              key={index} 
+              className={`w-1 h-8 transition-all duration-500 ${index === currentIndex ? 'bg-primary shadow-[0_0_10px_rgba(251,191,36,0.8)]' : 'bg-white/10'}`} 
+            />
+          ))}
+        </div>
       </div>
-
-      {/* Dots Indicator */}
-      <div className="flex justify-center space-x-2 mt-6">
-        {fashionItems.map((_, index) => (
-          <button
-            key={index}
-            onClick={() => goToSlide(index)}
-            className={`w-3 h-3 rounded-full transition-all duration-300 ${
-              index === currentIndex 
-                ? 'bg-purple-600 w-8' 
-                : 'bg-gray-300 hover:bg-gray-400'
-            }`}
-          />
-        ))}
-      </div>
-
-      
     </div>
   );
 };

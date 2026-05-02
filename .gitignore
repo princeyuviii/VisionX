@@ -37,11 +37,16 @@ next-env.d.ts
 
 # Python virtual environments
 /tfenv/
-/tfenv/
-/tfenv/
-/.tfenv/
+/venv/
+.venv/
+env/
+backend/venv/
 
-/__pycache__/
-/*.py[cod]
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
 
-backend/
+# OS files
+.DS_Store
+Thumbs.db

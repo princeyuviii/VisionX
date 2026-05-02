@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Menu, X, Camera, Sparkles, Info, Users, LogIn
+  Menu, X, Camera, Sparkles, Info, Users, Cpu, Globe, Zap, ShoppingBag, Box, ShoppingCart
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -14,8 +14,10 @@ import {
   SignInButton,
   UserButton
 } from '@clerk/nextjs';
+import { useCart } from '@/context/CartContext';
 
 const Navbar = () => {
+  const { cartCount } = useCart();
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -28,74 +30,89 @@ const Navbar = () => {
   }, []);
 
   const navItems = [
-    { href: '/try-on', label: 'Try-On', icon: Camera },
-    { href: '/recommend', label: 'Recommend', icon: Sparkles },
-    { href: '/community', label: 'Community', icon: Users },
-    { href: '/how-it-works', label: 'How it Works', icon: Info },
+    { href: '/try-on', label: 'TRY_ON' },
+    { href: '/recommend', label: 'AI_STYLING' },
+    { href: '/community', label: 'COMMUNITY' },
+    { href: '/closet', label: 'CLOSET' },
   ];
 
   return (
     <motion.nav
       initial={{ y: -100 }}
       animate={{ y: 0 }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled
-          ? 'bg-white/90 backdrop-blur-lg border-b border-gray-200/20 shadow-lg'
-          : 'bg-transparent'
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 border-b border-white/5 ${
+        scrolled ? 'bg-black/90 backdrop-blur-xl py-4' : 'bg-transparent py-6'
       }`}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2">
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="bg-gradient-to-r from-purple-600 to-pink-600 p-2 rounded-xl"
-            >
-              <Camera className="h-6 w-6 text-white" />
-            </motion.div>
-            <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-              VisionX
-            </span>
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="flex justify-between items-center">
+          {/* Logo: Simple & Clear */}
+          <Link href="/" className="flex items-center space-x-3 group">
+            <div className="bg-primary/10 p-2 border border-primary/30 rounded-none group-hover:border-primary transition-all">
+              <Camera className="h-5 w-5 text-primary" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-xl font-black tracking-tighter text-white uppercase italic group-hover:text-primary transition-colors">
+                Vision<span className="text-primary">X</span>
+              </span>
+              <span className="text-[8px] font-mono tracking-[0.4em] text-zinc-600 uppercase">AI_FASHION_APP</span>
+            </div>
           </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-1">
+          {/* Desktop Navigation: Simple */}
+          <div className="hidden md:flex items-center space-x-10">
             {navItems.map((item) => (
               <Link key={item.href} href={item.href}>
                 <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="flex items-center space-x-2 px-4 py-2 rounded-lg text-gray-700 hover:text-purple-600 hover:bg-purple-50 transition-colors"
+                  whileHover={{ color: '#fbbf24' }}
+                  className="text-[10px] font-mono font-black tracking-[0.3em] text-zinc-500 hover:text-white transition-all uppercase cursor-pointer"
                 >
-                  <item.icon className="h-4 w-4" />
-                  <span className="font-medium">{item.label}</span>
+                  {item.label}
                 </motion.div>
               </Link>
             ))}
           </div>
 
-          {/* Desktop Auth */}
-          <div className="hidden md:flex items-center space-x-3">
+          {/* Desktop Auth & Cart */}
+          <div className="hidden md:flex items-center space-x-6">
+            <Link href="/checkout" className="relative group p-2">
+              <ShoppingCart className="h-5 w-5 text-zinc-500 group-hover:text-primary transition-colors" />
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-primary text-black text-[8px] font-black w-4 h-4 flex items-center justify-center rounded-full animate-pulse">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+
             <SignedOut>
-              <SignInButton>
-                <Button variant="ghost" className="flex items-center space-x-2 text-gray-700 hover:text-purple-600">
-                  <LogIn className="h-4 w-4" />
-                  <span>Sign In</span>
-                </Button>
+              <SignInButton mode="modal">
+                <button className="text-[10px] font-mono tracking-[0.3em] text-zinc-500 hover:text-white transition-colors uppercase">
+                  LOGIN
+                </button>
               </SignInButton>
+              <Link href="/auth/sign-up">
+                <Button className="bg-primary text-black hover:bg-white transition-all rounded-none font-black px-8 py-2 h-9 text-[10px] uppercase tracking-widest">
+                  SIGN_UP
+                </Button>
+              </Link>
             </SignedOut>
 
             <SignedIn>
-              <UserButton afterSignOutUrl="/" />
+              <UserButton 
+                appearance={{
+                  elements: {
+                    userButtonAvatarBox: "h-9 w-9 border border-primary/30 rounded-none p-0.5 bg-zinc-900"
+                  }
+                }}
+                afterSignOutUrl="/" 
+              />
             </SignedIn>
           </div>
 
           {/* Mobile menu button */}
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden p-2 rounded-lg text-gray-700 hover:text-purple-600 hover:bg-purple-50 transition-colors"
+            className="md:hidden p-2 text-white hover:text-primary transition-colors"
           >
             {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
@@ -106,45 +123,37 @@ const Navbar = () => {
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="md:hidden bg-white/95 backdrop-blur-lg border-t border-gray-200/20"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            className="md:hidden fixed inset-0 bg-black z-50 flex flex-col p-8 space-y-8"
           >
-            <div className="px-4 py-4 space-y-2">
-              {navItems.map((item) => (
-                <Link key={item.href} href={item.href} onClick={() => setIsOpen(false)}>
-                  <motion.div
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 hover:text-purple-600 hover:bg-purple-50 transition-colors"
-                  >
-                    <item.icon className="h-5 w-5" />
-                    <span className="font-medium">{item.label}</span>
-                  </motion.div>
+            <div className="flex justify-between items-center mb-12">
+               <Camera className="h-8 w-8 text-primary" />
+               <button onClick={() => setIsOpen(false)} className="text-white">
+                 <X className="h-8 w-8" />
+               </button>
+            </div>
+            
+            {navItems.map((item) => (
+              <Link key={item.href} href={item.href} onClick={() => setIsOpen(false)}>
+                <span className="text-4xl font-black italic text-white hover:text-primary transition-colors tracking-tighter uppercase">
+                  {item.label}
+                </span>
+              </Link>
+            ))}
+
+            <div className="pt-12 flex flex-col space-y-6">
+              <SignedOut>
+                <Link href="/auth/sign-up" onClick={() => setIsOpen(false)}>
+                  <Button className="w-full h-16 rounded-none bg-primary text-black font-black text-xl uppercase tracking-widest shadow-2xl">
+                    GET_STARTED
+                  </Button>
                 </Link>
-              ))}
-
-              <div className="pt-4 border-t border-gray-200 space-y-2">
-                <SignedOut>
-                  <SignInButton>
-                    <Button
-                      variant="ghost"
-                      className="w-full justify-start text-gray-700 hover:text-purple-600"
-                      onClick={() => setIsOpen(false)}
-                    >
-                      <LogIn className="h-5 w-5 mr-3" />
-                      <span>Sign In</span>
-                    </Button>
-                  </SignInButton>
-                </SignedOut>
-
-                <SignedIn>
-                  <div className="flex items-center px-4">
-                    <UserButton afterSignOutUrl="/" />
-                  </div>
-                </SignedIn>
-              </div>
+                <SignInButton mode="modal">
+                  <button className="text-sm font-mono tracking-[0.5em] text-zinc-500 py-4 uppercase">LOGIN</button>
+                </SignInButton>
+              </SignedOut>
             </div>
           </motion.div>
         )}

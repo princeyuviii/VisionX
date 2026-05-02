@@ -1,43 +1,48 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { analyzeFashion, checkMLServerHealth } from "@/lib/ml_model"
+import { auth } from "@clerk/nextjs"
+import connectToDatabase from "@/lib/mongodb"
+import Analysis from "@/models/Analysis"
 
 export async function POST(request: NextRequest) {
   try {
-    console.log("API: Starting fashion analysis request")
+    const { userId } = auth();
+    console.log("API: Starting fashion analysis request for user:", userId)
 
     const body = await request.json()
     const { imageData } = body
 
     if (!imageData) {
-      console.error("API: No image data provided")
       return NextResponse.json({ success: false, error: "No image data provided" }, { status: 400 })
     }
 
-    console.log("API: Image data received, length:", imageData.length)
-
-    // Check if ML server is available
-    console.log("API: Checking ML server health...")
     const isMLServerHealthy = await checkMLServerHealth()
-    console.log("API: ML server health:", isMLServerHealthy)
-
-    if (!isMLServerHealthy) {
-      console.warn("API: ML server is not available, proceeding with fallback analysis")
-    }
-
-    // Perform fashion analysis using your ML models
-    console.log("API: Starting fashion analysis...")
     const analysisResult = await analyzeFashion(imageData)
-    console.log("API: Analysis completed successfully")
+
+    // Save to database if user is logged in
+    if (userId) {
+      try {
+        await connectToDatabase();
+        await Analysis.create({
+          clerkId: userId,
+          image: imageData.substring(0, 5000), // Storing a preview or URL would be better, but saving a snippet for now
+          results: {
+            skinTone: analysisResult.skinTone,
+            bodyType: analysisResult.bodyType,
+            faceShape: analysisResult.faceShape,
+            recommendations: analysisResult.recommendations
+          }
+        });
+        console.log("API: Analysis saved to database");
+      } catch (dbError) {
+        console.error("API: Database save failed:", dbError);
+      }
+    }
 
     return NextResponse.json({
       success: true,
       analysis: analysisResult,
       mlServerStatus: isMLServerHealthy ? "online" : "offline",
-      debug: {
-        imageDataLength: imageData.length,
-        mlServerUrl: process.env.NEXT_PUBLIC_ML_SERVER_URL,
-        timestamp: new Date().toISOString(),
-      },
     })
   } catch (error) {
     console.error("API: Fashion analysis error:", error)

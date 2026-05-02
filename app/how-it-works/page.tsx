@@ -79,7 +79,8 @@ const stats = [
 
 export default function HowItWorksPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 pt-20 pb-8">
+    <div className="min-h-screen bg-background relative overflow-hidden pt-20 pb-8">
+      <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:50px_50px] -z-10" />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Hero Section */}
         <motion.div
@@ -87,10 +88,10 @@ export default function HowItWorksPage() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-16"
         >
-          <h1 className="text-3xl sm:text-5xl font-bold text-gray-900 mb-6">
-            How VisionX Works
+          <h1 className="text-3xl sm:text-5xl font-bold text-foreground mb-6">
+            How <span className="text-gradient animate-glow">VisionX</span> Works
           </h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
             Discover the cutting-edge technology behind our virtual try-on platform. 
             From camera capture to AI analysis, here's how we make fashion magic happen.
           </p>
@@ -134,7 +135,7 @@ export default function HowItWorksPage() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
               >
-                <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm overflow-hidden">
+                <Card className="shadow-xl border-0 glass overflow-hidden">
                   <CardContent className="p-0">
                     <div className={`grid md:grid-cols-2 gap-8 ${index % 2 === 1 ? 'md:grid-flow-col-dense' : ''}`}>
                       {/* Visual Section */}
@@ -219,7 +220,7 @@ export default function HowItWorksPage() {
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.05 }}
                 whileHover={{ scale: 1.05 }}
-                className="flex items-center space-x-3 p-4 bg-white/60 backdrop-blur-sm rounded-lg shadow-md hover:shadow-lg transition-shadow"
+                className="flex items-center space-x-3 p-4 glass shadow-md hover:shadow-lg transition-shadow"
               >
                 <CheckCircle className="h-6 w-6 text-green-500 flex-shrink-0" />
                 <span className="font-medium text-gray-700">{feature}</span>
@@ -229,7 +230,7 @@ export default function HowItWorksPage() {
         </section>
 
         {/* Monetization & Integration Opportunities */}
-        <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white/60 backdrop-blur-sm">
+        <section className="py-20 px-4 sm:px-6 lg:px-8 glass border-0 rounded-3xl">
           <div className="max-w-7xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}

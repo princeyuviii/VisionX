@@ -1,18 +1,35 @@
 'use client';
-import { Github, Linkedin, Instagram } from 'lucide-react';
+
+import { Github, Linkedin, Instagram, Twitter } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export default function SocialLinks() {
+  const socials = [
+    { icon: Github, href: "https://github.com/princeyuviii", label: "SRC_CODE" },
+    { icon: Linkedin, href: "https://linkedin.com/in/princeyuvi", label: "NETWORK" },
+    { icon: Instagram, href: "https://instagram.com", label: "VISUALS" },
+    { icon: Twitter, href: "https://twitter.com", label: "UPDATES" }
+  ];
+
   return (
-    <div className="flex justify-center space-x-6 mt-16">
-      <a href="https://github.com/princeyuviii" target="_blank" rel="noreferrer">
-        <Github className="h-6 w-6 text-gray-600 hover:text-black" />
-      </a>
-      <a href="https://linkedin.com/in/princeyuvi" target="_blank" rel="noreferrer">
-        <Linkedin className="h-6 w-6 text-blue-600 hover:text-blue-800" />
-      </a>
-      <a href="https://instagram.com" target="_blank" rel="noreferrer">
-        <Instagram className="h-6 w-6 text-pink-500 hover:text-pink-700" />
-      </a>
+    <div className="py-20 border-t border-white/5 flex flex-wrap justify-center gap-12">
+      {socials.map((social, i) => (
+        <motion.a 
+          key={i}
+          href={social.href}
+          target="_blank"
+          rel="noreferrer"
+          className="flex items-center space-x-4 group"
+          whileHover={{ y: -2 }}
+        >
+          <div className="w-12 h-12 border border-white/10 flex items-center justify-center group-hover:border-primary group-hover:bg-primary/5 transition-all">
+            <social.icon className="h-5 w-5 text-zinc-700 group-hover:text-primary transition-colors" />
+          </div>
+          <span className="text-[10px] font-mono tracking-[0.4em] text-zinc-800 group-hover:text-zinc-500 transition-colors uppercase font-black">
+            {social.label}
+          </span>
+        </motion.a>
+      ))}
     </div>
   );
 }

@@ -1,38 +1,57 @@
-// Gallery.tsx
-'use client'
+'use client';
+
+import { motion } from 'framer-motion';
+import { ShoppingBag } from 'lucide-react';
 
 type GalleryItem = {
-  src: string
-  title: string
-}
+  src: string;
+  title: string;
+  category: string;
+};
 
 const galleryItems: GalleryItem[] = [
-  { src: '/gallery/Img1.jpg', title: 'Old-Money Style' },
-  { src: '/gallery/Img2.jpg', title: 'Smart Casual ' },
-  { src: '/gallery/Img3.jpg', title: 'Ethnic Royal Kurta' },
-  { src: '/gallery/Img4.jpg', title: 'Retro Street ' },
-  { src: '/gallery/Img5.jpg', title: 'Formal Wear' },
-  { src: '/gallery/Img6.jpg', title: 'Smart Fit' },
-]
+  { src: 'https://images.unsplash.com/photo-1550246140-5119ae4790b8?q=80&w=1000&auto=format&fit=crop', title: 'CASUAL_STREET', category: 'EVERYDAY_WEAR' },
+  { src: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?q=80&w=1000&auto=format&fit=crop', title: 'CLASSIC_SUIT', category: 'FORMAL_STYLE' },
+  { src: 'https://images.unsplash.com/photo-1488161628813-04466f872be2?q=80&w=1000&auto=format&fit=crop', title: 'MODERN_LOOK', category: 'NEW_ARRIVAL' },
+  { src: 'https://images.unsplash.com/photo-1516251193007-45ef944ab0c6?q=80&w=1000&auto=format&fit=crop', title: 'URBAN_VIBE', category: 'POPULAR' },
+  { src: 'https://images.unsplash.com/photo-1519144412341-3d3863a14b1e?q=80&w=1000&auto=format&fit=crop', title: 'SIMPLE_STYLE', category: 'MINIMALIST' },
+  { src: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=1000&auto=format&fit=crop', title: 'BEST_FIT', category: 'TOP_RATED' },
+];
 
 export default function Gallery() {
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6 text-center">My Fashion Gallery</h1>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+    <div className="max-w-7xl mx-auto px-6 py-24">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-white/5 border border-white/5">
         {galleryItems.map((item, index) => (
-          <div key={index} className="rounded-lg overflow-hidden shadow-lg">
+          <motion.div 
+            key={index} 
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            className="relative aspect-square overflow-hidden group bg-black"
+          >
             <img
               src={item.src}
               alt={item.title}
-              className="w-full h-96 object-cover"
+              className="w-full h-full object-cover grayscale opacity-50 group-hover:grayscale-0 group-hover:scale-105 group-hover:opacity-80 transition-all duration-700"
             />
-            <div className="p-4 text-center bg-white">
-              <h2 className="text-lg font-semibold">{item.title}</h2>
+            
+            {/* Overlay Info */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-90" />
+            
+            <div className="absolute bottom-10 left-10 right-10 flex flex-col space-y-2">
+              <span className="text-[8px] font-mono tracking-[0.4em] text-primary uppercase">{item.category}</span>
+              <h3 className="text-xl font-black text-white tracking-tighter uppercase">{item.title}</h3>
+              <div className="h-[1px] w-0 group-hover:w-full bg-primary transition-all duration-500" />
             </div>
-          </div>
+
+            {/* Corner Badge */}
+            <div className="absolute top-10 right-10 opacity-0 group-hover:opacity-100 transition-opacity">
+               <ShoppingBag className="h-4 w-4 text-primary" />
+            </div>
+          </motion.div>
         ))}
       </div>
     </div>
-  )
+  );
 }

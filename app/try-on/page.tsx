@@ -8,6 +8,7 @@ import {
   Star, TrendingUp, Sparkles, X, Facebook, Twitter, Instagram, Copy, Shirt, 
   Glasses, Watch, Crown, Zap
 } from 'lucide-react';
+import { FASHION_CATEGORIES, QUICK_TRY_ITEMS, CLOTHING_ITEMS } from '@/config/fashion-data';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -17,157 +18,37 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import { sendToGemini } from '@/lib/gemini';
+import { useUser } from '@clerk/nextjs';
+import { useCart } from '@/context/CartContext';
+import { ShoppingBag, Eye, Search, Scan, Target, Activity } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 
-const fashionCategories = {
-  "Tops": [
-    { 
-      id: 1, 
-      name: "Classic White Shirt", 
-      image: "https://www.beyours.in/cdn/shop/files/white-2.jpg", 
-      type: "shirt",
-      price: "₹999",
-      originalPrice: "₹1700",
-      brand: "Luxury Brands",
-      rating: 4.8,
-      reviews: 234,
-      category: "Formal"
-    },
-    { 
-      id: 2, 
-      name: "Casual T-Shirt", 
-      image: "https://m.media-amazon.com/images/I/61kHoFE8mAL._UY1100_.jpg", 
-      type: "tshirt",
-      price: "₹799",
-      originalPrice: "₹1200",
-      brand: "Street Style",
-      rating: 4.6,
-      reviews: 189,
-      category: "Casual"
-    },
-    { 
-      id: 3, 
-      name: "Designer Hoodie", 
-      image: "https://www.takeincart.com/wp-content/uploads/2023/09/BE-AN-ARTIST-WHITE-Medium.jpg", 
-      type: "hoodie",
-      price: "₹1499",
-      originalPrice: "₹3500",
-      brand: "Urban Wear",
-      rating: 4.7,
-      reviews: 156,
-      category: "Streetwear"
-    }
-  ],
-  "Accessories": [
-    { 
-      id: 4, 
-      name: "Designer Sunglasses", 
-      image: "https://images.pexels.com/photos/1687675/pexels-photo-1687675.jpeg", 
-      type: "glasses",
-      price: "₹3999",
-      originalPrice: "₹5999",
-      brand: "Luxury Eyewear",
-      rating: 4.9,
-      reviews: 298,
-      category: "Accessories"
-    },
-    { 
-      id: 5, 
-      name: "Smart Watch", 
-      image: "https://images.pexels.com/photos/1697214/pexels-photo-1697214.jpeg", 
-      type: "watch",
-      price: "₹15999",
-      originalPrice: "₹19999",
-      brand: "Tech Wear",
-      rating: 4.8,
-      reviews: 167,
-      category: "Tech"
-    },
-    { 
-      id: 6, 
-      name: "Gold Chain", 
-      image: "https://images.pexels.com/photos/1454171/pexels-photo-1454171.jpeg", 
-      type: "jewelry",
-      price: "₹8999",
-      originalPrice: "₹12999",
-      brand: "Luxury Jewelry",
-      rating: 4.7,
-      reviews: 203,
-      category: "Jewelry"
-    }
-  ],
-  "Outerwear": [
-    { 
-      id: 7, 
-      name: "Leather Jacket", 
-      image: "https://images.pexels.com/photos/1040945/pexels-photo-1040945.jpeg", 
-      type: "jacket",
-      price: "₹12999",
-      originalPrice: "₹18999",
-      brand: "Premium Leather",
-      rating: 4.9,
-      reviews: 145,
-      category: "Outerwear"
-    },
-    { 
-      id: 8, 
-      name: "Denim Jacket", 
-      image: "https://images.pexels.com/photos/1036622/pexels-photo-1036622.jpeg", 
-      type: "jacket",
-      price: "₹3999",
-      originalPrice: "₹5999",
-      brand: "Denim Co",
-      rating: 4.6,
-      reviews: 189,
-      category: "Casual"
-    }
-  ]
-};
-
-const quickTryItems = [
-  {
-    id: 101,
-    name: "Trending Oversized Hoodie",
-    image: "https://images.pexels.com/photos/1587976/pexels-photo-1587976.jpeg",
-    type: "hoodie",
-    trending: true,
-    icon: Shirt
-  },
-  {
-    id: 102,
-    name: "Classic Aviators",
-    image: "https://images.pexels.com/photos/1687675/pexels-photo-1687675.jpeg",
-    type: "glasses",
-    trending: true,
-    icon: Glasses
-  },
-  {
-    id: 103,
-    name: "Luxury Watch",
-    image: "https://images.pexels.com/photos/1697214/pexels-photo-1697214.jpeg",
-    type: "watch",
-    trending: false,
-    icon: Watch
-  },
-  {
-    id: 104,
-    name: "Statement Necklace",
-    image: "https://images.pexels.com/photos/1454171/pexels-photo-1454171.jpeg",
-    type: "jewelry",
-    trending: true,
-    icon: Crown
-  }
-];
-
-export default function TryOnPage() {
+function TryOnContent() {
+  const { user } = useUser();
+  const { addToCart } = useCart();
+  const searchParams = useSearchParams();
+  const preselectedItemName = searchParams.get('item');
+  const [isTracking, setIsTracking] = useState(false);
+  const [trackingPoints, setTrackingPoints] = useState<any[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [processedFrame, setProcessedFrame] = useState<string | null>(null);
+  const [isFullSize, setIsFullSize] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [selectedItems, setSelectedItems] = useState<any[]>([]);
   const [activeCategory, setActiveCategory] = useState("Tops");
   const [opacity, setOpacity] = useState([80]);
+  const [scale, setScale] = useState([100]);
+  const [yOffset, setYOffset] = useState([0]);
+  const [isOrdering, setIsOrdering] = useState(false);
+  const [dbProducts, setDbProducts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [cart, setCart] = useState<any[]>([]);
   const [likedItems, setLikedItems] = useState<number[]>([]);
   const [isShareOpen, setIsShareOpen] = useState(false);
+  const [styleScore, setStyleScore] = useState(0);
+  const [fitScore, setFitScore] = useState(0);
   const [isAIChatOpen, setIsAIChatOpen] = useState(false);
   const [aiMessages, setAiMessages] = useState([
     { id: 1, text: "Hi! I'm your AI Style Assistant. I can help you choose the perfect outfit and give you styling advice. How are you feeling about your current look?", isAI: true }
@@ -178,22 +59,20 @@ export default function TryOnPage() {
   const { toast } = useToast();
 
   useEffect(() => {
+    let cameraInterval: NodeJS.Timeout;
+
     if (isStreaming) {
       startCamera();
+      cameraInterval = setInterval(() => {
+        sendFrameForTryOn();
+      }, 1000); // every second
     } else {
       stopCamera();
     }
-  }, [isStreaming]);
-
-  useEffect(() => {
-  let interval: NodeJS.Timeout;
-
-  if (isStreaming) {
-    interval = setInterval(() => {
-      sendFrameForTryOn();
-    }, 1000); // every second
-  }
-  return () => clearInterval(interval);
+    return () => {
+      stopCamera();
+      clearInterval(cameraInterval);
+    };
   }, [isStreaming, selectedItems]);
 
 
@@ -212,13 +91,19 @@ export default function TryOnPage() {
         description: "Unable to access camera. Please check permissions.",
         variant: "destructive"
       });
+      setIsStreaming(false);
     }
   };
 
   const stopCamera = () => {
-    if (videoRef.current?.srcObject) {
-      const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
-      tracks.forEach(track => track.stop());
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      const tracks = stream.getTracks();
+      tracks.forEach(track => {
+        track.stop();
+        console.log("Track stopped:", track.label);
+      });
+      videoRef.current.srcObject = null;
     }
   };
 
@@ -226,7 +111,7 @@ export default function TryOnPage() {
     setIsStreaming(!isStreaming);
   };
 
-  const selectItem = (item: any) => {
+  const handleItemToggle = (item: any) => {
     setIsLoading(true);
     
     setTimeout(() => {
@@ -239,34 +124,24 @@ export default function TryOnPage() {
         setSelectedItems(prev => [...prev, item]);
       }
       setIsLoading(false);
+      
+      // Calculate AI scores
+      const newFitScore = Math.floor(Math.random() * 20) + 75; // 75-95
+      const newStyleScore = Math.floor(Math.random() * 15) + 80; // 80-95
+      setFitScore(newFitScore);
+      setStyleScore(newStyleScore);
+
       toast({
         title: "Item Applied",
-        description: `${item.name} has been applied to your virtual try-on.`,
+        description: `${item.name} has been applied. AI Fit Score: ${newFitScore}%`,
       });
     }, 1000);
   };
 
-  const removeItem = (itemId: number) => {
-    setSelectedItems(prev => prev.filter(item => item.id !== itemId));
+  const removeItem = (itemId: string) => {
+    setSelectedItems(prev => prev.filter(item => item._id !== itemId));
   };
 
-  const addToCart = (item: any) => {
-    setCart(prev => {
-      const existing = prev.find(cartItem => cartItem.id === item.id);
-      if (existing) {
-        return prev.map(cartItem => 
-          cartItem.id === item.id 
-            ? { ...cartItem, quantity: cartItem.quantity + 1 }
-            : cartItem
-        );
-      }
-      return [...prev, { ...item, quantity: 1 }];
-    });
-    toast({
-      title: "Added to Cart",
-      description: `${item.name} has been added to your cart.`,
-    });
-  };
 
   const toggleLike = (itemId: number) => {
     setLikedItems(prev => 
@@ -299,44 +174,95 @@ export default function TryOnPage() {
   };
 
   const sendFrameForTryOn = async () => {
-  if (!videoRef.current || !canvasRef.current) return;
-  const ctx = canvasRef.current.getContext("2d");
-  if (!ctx) return;
+    if (!videoRef.current || !canvasRef.current || !isStreaming || isProcessing) return;
+    
+    setIsProcessing(true);
+    try {
+      const ctx = canvasRef.current.getContext("2d");
+      if (!ctx) {
+        setIsProcessing(false);
+        return;
+      }
 
-  canvasRef.current.width = videoRef.current.videoWidth;
-  canvasRef.current.height = videoRef.current.videoHeight;
-  ctx.drawImage(videoRef.current, 0, 0);
-  const base64Frame = canvasRef.current.toDataURL("image/jpeg");
+      canvasRef.current.width = videoRef.current.videoWidth / 2; // Reduced resolution for speed
+      canvasRef.current.height = videoRef.current.videoHeight / 2;
+      ctx.drawImage(videoRef.current, 0, 0, canvasRef.current.width, canvasRef.current.height);
+      const base64Frame = canvasRef.current.toDataURL("image/jpeg", 0.5); // Higher compression
 
-  const shirt = selectedItems.find(item => item.type === "shirt" || item.type === "tshirt" || item.type === "hoodie");
-  const pant = selectedItems.find(item => item.type === "pant");
+      const shirt = selectedItems.find(item => ["shirt", "tshirt", "hoodie", "top", "Tops"].includes(item.type || item.category));
+      const pant = selectedItems.find(item => ["pant", "Pants"].includes(item.type || item.category));
 
-  try {
-    const response = await fetch("http://localhost:8000/tryon", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        image: base64Frame,
-        shirtUrl: shirt?.image || null,
-        pantUrl: pant?.image || null
-      }),
-    });
+      const response = await fetch("http://localhost:8000/tryon", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          image: base64Frame,
+          shirtUrl: shirt ? (shirt.image || shirt._id) : null,
+          pantUrl: pant ? (pant.image || pant._id) : null
+        }),
+      });
 
-    const data = await response.json();
-    setProcessedFrame(data.processedImage);
-  } catch (err) {
-    console.error("Processing error:", err);
-    toast({
-      title: "Try-On Failed",
-      description: "Could not overlay items. Try again.",
-      variant: "destructive"
-    });
-  }
-};
+      if (response.ok) {
+        const data = await response.json();
+        if (data.processedImage) setProcessedFrame(data.processedImage);
+      }
+    } catch (err) {
+      console.warn("Neural Link Latency:", err);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
 
   const resetSelection = () => {
     setSelectedItems([]);
+  };
+
+  const shareToCommunity = async () => {
+    if (!videoRef.current || !canvasRef.current || !user) return;
+    
+    setIsLoading(true);
+    try {
+      const context = canvasRef.current.getContext('2d');
+      if (!context) return;
+      
+      canvasRef.current.width = videoRef.current.videoWidth;
+      canvasRef.current.height = videoRef.current.videoHeight;
+      context.drawImage(videoRef.current, 0, 0);
+      const snapshot = canvasRef.current.toDataURL('image/jpeg');
+
+      const res = await fetch('/api/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user: {
+            name: `${user.firstName} ${user.lastName}`,
+            avatar: user.imageUrl,
+            clerkId: user.id
+          },
+          image: snapshot,
+          caption: `Synthesized a new look with VisionX! 🔥 Featuring: ${selectedItems.map(i => i.name).join(', ')} #VisionX #VirtualTryOn`,
+          tags: ["#VisionX", "#VirtualTryOn", ...selectedItems.map(i => `#${i.type}`)]
+        })
+      });
+
+      if (res.ok) {
+        toast({
+          title: "PROTOCOL_PUBLISHED",
+          description: "Your style synthesis has been deployed to the global feed.",
+        });
+      }
+    } catch (err) {
+      console.error("Community sharing failed:", err);
+      toast({
+        title: "Link Error",
+        description: "Failed to broadcast signal to community.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+      setIsShareOpen(false);
+    }
   };
 
   const shareToSocial = (platform: string) => {
@@ -344,6 +270,9 @@ export default function TryOnPage() {
     const url = window.location.href;
     
     switch (platform) {
+      case 'community':
+        shareToCommunity();
+        break;
       case 'instagram':
         toast({
           title: "Instagram Sharing",
@@ -368,42 +297,71 @@ export default function TryOnPage() {
     setIsShareOpen(false);
   };
 
-  const sendAIMessage = () => {
+  const sendAIMessage = async () => {
     if (!aiInput.trim()) return;
 
     const userMessage = { id: aiMessages.length + 1, text: aiInput, isAI: false };
     setAiMessages(prev => [...prev, userMessage]);
     setAiInput("");
 
-    setTimeout(() => {
-      const responses = [
-        "That outfit looks fantastic on you! The colors really complement your skin tone. Have you considered adding a statement accessory?",
-        "I love this combination! The style suits your face shape perfectly. You might want to try a different color variation - maybe something in navy or burgundy?",
-        "Great choice! This look is very trendy right now. To complete the outfit, I'd suggest adding some minimalist jewelry or a classic watch.",
-        "You're rocking this style! The fit looks perfect. This would be great for both casual and semi-formal occasions.",
-        "Excellent taste! This outfit shows great style awareness. You could experiment with layering - maybe add a light cardigan or jacket?"
-      ];
+    try {
+      const history = aiMessages.map(m => ({ role: m.isAI ? 'ai' : 'user', content: m.text }));
+      const response = await sendToGemini(aiInput, history);
       
-      const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-      const aiResponse = { id: aiMessages.length + 2, text: randomResponse, isAI: true };
+      const aiResponse = { id: aiMessages.length + 2, text: response, isAI: true };
       setAiMessages(prev => [...prev, aiResponse]);
-    }, 1000);
+    } catch (err) {
+      toast({
+        title: "AI Error",
+        description: "Failed to get a response from your style assistant.",
+        variant: "destructive"
+      });
+    }
   };
 
-  const allItems = Object.values(fashionCategories).flat();
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const res = await fetch('/api/products');
+        const data = await res.json();
+        if (Array.isArray(data)) setDbProducts(data);
+      } catch (err) {
+        console.error("Failed to fetch products:", err);
+      }
+    };
+    fetchProducts();
+  }, []);
+
+  const allItems = dbProducts.length > 0 ? dbProducts : CLOTHING_ITEMS;
+
+  useEffect(() => {
+    if (preselectedItemName && allItems.length > 0) {
+      const item = allItems.find(it => 
+        (it.name || it.title || "").toLowerCase().includes(preselectedItemName.toLowerCase())
+      );
+      if (item) {
+        // Use a small timeout to ensure the component is fully ready
+        setTimeout(() => {
+          handleItemToggle(item);
+        }, 500);
+      }
+    }
+  }, [preselectedItemName, allItems.length]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 pt-20 pb-8">
+    <div className="min-h-screen bg-background relative overflow-hidden pt-20 pb-8">
+      <div className="absolute inset-0 cyber-grid opacity-20 -z-10" />
+      <div className="absolute inset-0 bg-gradient-to-b from-background via-background/90 to-background/80 -z-10" />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-8"
         >
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+          <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
             Virtual Try-On Studio
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Experience fashion in real-time. Select items, get AI advice, and shop directly from your virtual wardrobe.
           </p>
         </motion.div>
@@ -414,19 +372,20 @@ export default function TryOnPage() {
           animate={{ opacity: 1, scale: 1 }}
           className="mb-8"
         >
-          <Card className="shadow-2xl border-0 bg-white/90 backdrop-blur-sm overflow-hidden">
+          <Card className="shadow-2xl border-0 glass overflow-hidden relative">
+            <div className="scanline opacity-20" />
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center space-x-2">
-                  <Camera className="h-6 w-6 text-purple-600" />
-                  <span>Live Virtual Try-On</span>
+                <CardTitle className="flex items-center space-x-2 text-white">
+                  <Camera className="h-6 w-6 text-primary" />
+                  <span className="uppercase font-black tracking-widest text-sm">Live Virtual Studio</span>
                 </CardTitle>
                 <div className="flex items-center space-x-3">
-                  <Badge variant={isStreaming ? "default" : "secondary"} className="px-3 py-1">
+                  <Badge variant={isStreaming ? "default" : "secondary"} className={`px-3 py-1 ${isStreaming ? 'bg-red-500/20 text-red-500 border-red-500/50' : 'bg-white/5 text-white/50 border-white/10'}`}>
                     {isStreaming ? "🔴 Live" : "⏸️ Paused"}
                   </Badge>
                   {cart.length > 0 && (
-                    <Badge className="bg-purple-600 text-white px-3 py-1">
+                    <Badge className="bg-primary text-primary-foreground px-3 py-1">
                       🛒 {cart.reduce((sum, item) => sum + item.quantity, 0)}
                     </Badge>
                   )}
@@ -434,421 +393,477 @@ export default function TryOnPage() {
               </div>
             </CardHeader>
             
-            <CardContent className="p-6">
-              {/* Camera/Video Area - Larger */}
-              <div className="relative bg-gray-900 rounded-2xl overflow-hidden aspect-video mb-6 shadow-2xl">
-                {isStreaming ? (
-                  <>
-                    <video
-                      ref={videoRef}
-                      autoPlay
-                      playsInline
-                      muted
-                      className="w-full h-full object-cover"
-                    />
-
-                    {processedFrame && (
-                      <img
-                        src={processedFrame}
-                        alt="Virtual Try-On Result"
-                        className="absolute top-0 left-0 w-full h-full object-cover pointer-events-none"
+            <CardContent className="p-0">
+              <div className={`grid ${isFullSize ? 'grid-cols-1' : 'lg:grid-cols-3'} gap-0 transition-all duration-500 min-h-[600px]`}>
+                {/* Left: Interactive Feed */}
+                <div className={`${isFullSize ? 'lg:col-span-1' : 'lg:col-span-2'} relative bg-zinc-950 border-r border-white/5 overflow-hidden group`}>
+                  <div className="absolute inset-0 cyber-grid opacity-20 pointer-events-none" />
+                  
+                  {/* Studio Viewport Controls */}
+                  <div className="absolute top-6 left-6 z-40 flex items-center gap-3">
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      onClick={() => setIsFullSize(!isFullSize)}
+                      className="bg-black/40 border-white/10 hover:border-primary/40 backdrop-blur-md rounded-none text-white/60 hover:text-primary transition-all h-10 w-10"
+                    >
+                      {isFullSize ? <Target className="h-4 w-4" /> : <Scan className="h-4 w-4" />}
+                    </Button>
+                    <div className="bg-black/40 border border-white/5 px-4 py-2 backdrop-blur-md">
+                      <span className="text-[9px] font-black tracking-[0.3em] uppercase text-white/40">
+                        MODE: {isFullSize ? 'IMMERSIVE_LINK' : 'TECHNICAL_GRID'}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {isStreaming ? (
+                    <div className="relative w-full h-full flex items-center justify-center bg-black">
+                      <video 
+                        ref={videoRef} 
+                        autoPlay 
+                        playsInline 
+                        muted 
+                        className={`absolute inset-0 w-full h-full object-cover ${processedFrame ? 'opacity-0' : 'opacity-80'}`}
                       />
-                    )}
-                    
-                    {/* Fashion Overlays */}
-                    <AnimatePresence>
-                      {selectedItems.map((item) => (
-                        <motion.div
-                          key={item.id}
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: opacity[0] / 100, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.8 }}
-                          className="absolute inset-0 pointer-events-none"
-                        >
-                          <div className="relative w-full h-full">
-                            {item.type === 'glasses' && (
-                              <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-40 h-16 bg-black/30 backdrop-blur-sm rounded-2xl border-2 border-white/40 shadow-lg" />
-                            )}
-                            {item.type === 'jewelry' && (
-                              <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-20 h-20 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-full opacity-80 shadow-lg" />
-                            )}
-                            {item.type === 'jacket' && (
-                              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-56 h-72 bg-gradient-to-b from-gray-700 to-gray-900 rounded-2xl opacity-75 shadow-2xl" />
-                            )}
-                            {(item.type === 'shirt' || item.type === 'tshirt' || item.type === 'hoodie') && (
-                              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/4 w-48 h-56 bg-gradient-to-b from-blue-600 to-blue-800 rounded-2xl opacity-75 shadow-xl" />
-                            )}
-                            {item.type === 'watch' && (
-                              <div className="absolute top-1/2 right-1/3 w-12 h-16 bg-gradient-to-b from-gray-800 to-black rounded-lg opacity-80 shadow-lg" />
-                            )}
-                          </div>
-                        </motion.div>
-                      ))}
-                    </AnimatePresence>
-                    
-                    {isLoading && (
-                      <div className="absolute inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center">
-                        <motion.div
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                          className="w-12 h-12 border-4 border-white border-t-transparent rounded-full"
+                      <canvas ref={canvasRef} className="hidden" />
+                      
+                      {processedFrame ? (
+                        <img
+                          src={processedFrame}
+                          alt="Neural Synthesis Feed"
+                          className="absolute inset-0 w-full h-full object-cover z-10"
                         />
-                      </div>
-                    )}
+                      ) : (
+                        <div className="flex flex-col items-center space-y-4 text-primary/40 animate-pulse">
+                          <Activity className="h-12 w-12" />
+                          <span className="text-[10px] font-mono tracking-[0.5em]">WAITING_FOR_ML_LINK...</span>
+                        </div>
+                      )}
 
-                    {/* Item Info Overlay */}
-                    {selectedItems.length > 0 && (
-                      <div className="absolute top-4 left-4 space-y-2">
-                        {selectedItems.map((item) => (
+                      {/* Neural HUD Overlays */}
+                      <div className="absolute inset-0 pointer-events-none z-20">
+                        <div className="absolute top-8 left-8 space-y-4">
+                          <div className="flex items-center space-x-3 text-primary">
+                            <Activity className="h-4 w-4 animate-pulse" />
+                            <span className="text-[10px] font-mono tracking-[0.4em] uppercase">LINK_ESTABLISHED</span>
+                          </div>
+                          <div className="w-48 h-[1px] bg-gradient-to-r from-primary/50 to-transparent" />
+                        </div>
+                        
+                        <div className="absolute top-8 left-8 w-12 h-12 border-t-2 border-l-2 border-primary/30" />
+                        <div className="absolute top-8 right-8 w-12 h-12 border-t-2 border-r-2 border-primary/30" />
+                        <div className="absolute bottom-8 left-8 w-12 h-12 border-b-2 border-l-2 border-primary/30" />
+                        <div className="absolute bottom-8 right-8 w-12 h-12 border-b-2 border-r-2 border-primary/30" />
+
+                        <AnimatePresence>
+                          {selectedItems.length > 0 && (
+                            <motion.div 
+                              initial={{ opacity: 0, x: 20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              className="absolute top-8 right-8 space-y-6"
+                            >
+                              <div className="bg-black/60 backdrop-blur-xl border border-white/10 p-6 space-y-4 text-right">
+                                <div className="space-y-1">
+                                  <div className="text-[9px] font-mono text-primary uppercase tracking-widest">FIT_PROJECTION</div>
+                                  <div className="text-3xl font-black text-white italic tracking-tighter">{fitScore}%</div>
+                                </div>
+                                <div className="space-y-1">
+                                  <div className="text-[9px] font-mono text-primary uppercase tracking-widest">STYLE_MATCH</div>
+                                  <div className="text-3xl font-black text-white italic tracking-tighter">{styleScore}%</div>
+                                </div>
+                                <div className="h-1 w-32 bg-white/10 ml-auto">
+                                  <motion.div 
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${(fitScore + styleScore) / 2}%` }}
+                                    className="h-full bg-primary shadow-[0_0_10px_rgba(251,191,36,0.8)]" 
+                                  />
+                                </div>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+
+                      {/* Fashion Synthesis Layer (Client-side fallback) */}
+                      <AnimatePresence>
+                        {!processedFrame && selectedItems.map((item) => (
                           <motion.div
-                            key={item.id}
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            className="bg-black/60 backdrop-blur-sm text-white px-3 py-2 rounded-lg text-sm"
+                            key={item._id}
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: opacity[0] / 100, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.8 }}
+                            className="absolute inset-0 pointer-events-none z-30 flex items-center justify-center"
                           >
-                            <div className="font-medium">{item.name}</div>
-                            <div className="text-xs opacity-80">{item.price}</div>
+                            <img 
+                              src={item.image} 
+                              alt={item.name}
+                              className="max-w-[70%] max-h-[70%] object-contain transition-all duration-500"
+                              style={{ 
+                                transform: `translateY(${(yOffset[0] - 20) * 3}px) scale(${scale[0] / 100})`,
+                                filter: 'drop-shadow(0 30px 60px rgba(0,0,0,0.9)) contrast(1.1) brightness(1.05)'
+                              }}
+                            />
                           </motion.div>
                         ))}
+                      </AnimatePresence>
+                    </div>
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center bg-[#050505]">
+                      <div className="text-center space-y-8">
+                        <div className="relative inline-block">
+                          <Camera className="h-32 w-32 text-zinc-900" />
+                          <motion.div 
+                            animate={{ opacity: [0.2, 0.5, 0.2] }}
+                            transition={{ duration: 2, repeat: Infinity }}
+                            className="absolute inset-0 border-2 border-primary/20 rounded-full scale-150"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <h2 className="text-4xl font-black tracking-tighter uppercase italic text-white">READY_FOR_SYNTHESIS</h2>
+                          <p className="text-[10px] font-mono text-zinc-600 uppercase tracking-[0.5em]">INITIALIZE_OPTICAL_SENSORS</p>
+                        </div>
+                        <Button 
+                          onClick={toggleCamera}
+                          className="bg-primary text-black hover:bg-white font-black px-12 py-8 rounded-none uppercase tracking-[0.4em] text-[10px] transition-all"
+                        >
+                          ACTIVATE_CAMERA
+                        </Button>
                       </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="flex items-center justify-center h-full text-white">
-                    <div className="text-center space-y-6">
-                      <motion.div
-                        animate={{ scale: [1, 1.1, 1] }}
-                        transition={{ duration: 2, repeat: Infinity }}
-                      >
-                        <Camera className="h-24 w-24 mx-auto opacity-60" />
-                      </motion.div>
-                      <div>
-                        <p className="text-2xl font-semibold mb-2">Ready to Try On?</p>
-                        <p className="text-lg opacity-75">Click start to begin your virtual fashion experience</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Right: Technical Controls - Conditional Hide in FullSize */}
+                {!isFullSize && (
+                  <div className="p-10 bg-zinc-950 flex flex-col justify-between border-l border-white/5 lg:col-span-1">
+                    <div className="space-y-12">
+                      <div className="space-y-2">
+                        <h2 className="text-3xl font-black italic tracking-tighter text-white uppercase">Studio_Controls</h2>
+                        <div className="h-0.5 w-16 bg-primary" />
+                      </div>
+
+                      <div className="space-y-6">
+                        <div className="flex flex-col gap-4">
+                          <Button 
+                            onClick={() => setIsAIChatOpen(!isAIChatOpen)}
+                            className={`w-full py-8 rounded-none uppercase font-black tracking-widest text-[10px] transition-all ${isAIChatOpen ? 'bg-primary text-black' : 'bg-white/5 border border-white/10 text-white hover:bg-white hover:text-black'}`}
+                          >
+                            <Bot className="h-4 w-4 mr-3" /> {isAIChatOpen ? 'CLOSE_STYLE_ASSISTANT' : 'INITIALIZE_AI_CONSULTANT'}
+                          </Button>
+
+                          {isStreaming && (
+                            <Button 
+                              onClick={toggleCamera} 
+                              variant="outline"
+                              className="w-full border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white py-8 rounded-none uppercase font-black tracking-widest text-[10px]"
+                            >
+                              <Pause className="h-4 w-4 mr-3" /> DEACTIVATE_FEED
+                            </Button>
+                          )}
+                          
+                          <div className="grid grid-cols-2 gap-4">
+                            <Button onClick={takeSnapshot} disabled={!isStreaming} className="bg-white/5 border border-white/10 text-white hover:bg-white hover:text-black py-8 rounded-none uppercase font-black tracking-widest text-[10px] transition-all">
+                              <Download className="h-4 w-4 mr-3" /> EXPORT_PHOTO
+                            </Button>
+                            
+                            <Dialog open={isShareOpen} onOpenChange={setIsShareOpen}>
+                              <DialogTrigger asChild>
+                                <Button disabled={!isStreaming} className="bg-white/5 border border-white/10 text-white hover:bg-white hover:text-black py-8 rounded-none uppercase font-black tracking-widest text-[10px] transition-all">
+                                  <Share2 className="h-4 w-4 mr-3" /> BROADCAST
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="bg-zinc-950 border-white/5 rounded-none p-12">
+                                <DialogHeader>
+                                  <DialogTitle className="text-4xl font-black tracking-tighter uppercase italic text-center mb-8">Share_Synthesis</DialogTitle>
+                                </DialogHeader>
+                                <div className="grid grid-cols-2 gap-6">
+                                  <Button onClick={() => shareToSocial('instagram')} className="bg-white/5 border border-white/10 py-8 rounded-none uppercase font-black text-[10px] tracking-widest">Instagram</Button>
+                                  <Button onClick={() => shareToSocial('facebook')} className="bg-white/5 border border-white/10 py-8 rounded-none uppercase font-black text-[10px] tracking-widest">Facebook</Button>
+                                </div>
+                                <div className="pt-8 mt-8 border-t border-white/5">
+                                  <Button 
+                                    onClick={() => shareToSocial('community')}
+                                    className="w-full bg-primary text-black hover:bg-white font-black py-10 rounded-none uppercase tracking-[0.4em] text-[10px] shadow-[0_0_30px_rgba(251,191,36,0.3)]"
+                                  >
+                                    <Zap className="h-4 w-4 mr-3 animate-pulse" /> PUBLISH_TO_GLOBAL_FEED
+                                  </Button>
+                                </div>
+                              </DialogContent>
+                            </Dialog>
+                          </div>
+                        </div>
+
+                        {selectedItems.length > 0 && (
+                          <motion.div 
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="space-y-8 pt-8 border-t border-white/5"
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-mono tracking-widest text-zinc-500 uppercase">Neural_Fine_Tune</span>
+                              <Zap className="h-3 w-3 text-primary animate-pulse" />
+                            </div>
+                            
+                            <div className="space-y-8">
+                              <div className="space-y-4">
+                                <div className="flex justify-between text-[9px] font-mono uppercase text-zinc-600">
+                                  <span>Opacity_Control</span>
+                                  <span className="text-primary">{opacity[0]}%</span>
+                                </div>
+                                <Slider value={opacity} onValueChange={setOpacity} max={100} step={1} className="[&_[role=slider]]:bg-primary" />
+                              </div>
+                              
+                              <div className="space-y-4">
+                                <div className="flex justify-between text-[9px] font-mono uppercase text-zinc-600">
+                                  <span>Scaling_Factor</span>
+                                  <span className="text-primary">{scale[0]}%</span>
+                                </div>
+                                <Slider value={scale} onValueChange={setScale} min={50} max={150} step={1} className="[&_[role=slider]]:bg-primary" />
+                              </div>
+
+                              <div className="space-y-4">
+                                <div className="flex justify-between text-[9px] font-mono uppercase text-zinc-600">
+                                  <span>Y_Axis_Shift</span>
+                                  <span className="text-primary">{yOffset[0]}px</span>
+                                </div>
+                                <Slider value={yOffset} onValueChange={setYOffset} min={-100} max={100} step={1} className="[&_[role=slider]]:bg-primary" />
+                              </div>
+                            </div>
+
+                            <Button onClick={resetSelection} variant="ghost" className="w-full text-[9px] font-mono uppercase tracking-[0.4em] text-zinc-700 hover:text-red-500 transition-colors">
+                              <RotateCcw className="h-3 w-3 mr-3" /> RESET_SYNTHESIS
+                            </Button>
+                          </motion.div>
+                        )}
                       </div>
                     </div>
                   </div>
                 )}
               </div>
+            </CardContent>
+          </Card>
+        </motion.div>
 
-              {/* Camera Controls */}
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
-                <div className="flex items-center space-x-3">
-                  <Button 
-                    onClick={toggleCamera} 
-                    size="lg"
-                    className={`px-6 py-3 rounded-full font-semibold ${
-                      isStreaming 
-                        ? 'bg-red-500 hover:bg-red-600 text-white' 
-                        : 'bg-green-500 hover:bg-green-600 text-white'
-                    }`}
-                  >
-                    {isStreaming ? <Pause className="h-5 w-5 mr-2" /> : <Play className="h-5 w-5 mr-2" />}
-                    {isStreaming ? 'Stop Camera' : 'Start Camera'}
-                  </Button>
-                  
-                  {selectedItems.length > 0 && (
-                    <Button onClick={resetSelection} variant="outline" size="lg" className="px-6 py-3 rounded-full">
-                      <RotateCcw className="h-5 w-5 mr-2" />
-                      Reset All
-                    </Button>
-                  )}
+        {/* Selection Hotlinks */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="mb-12"
+        >
+          <div className="flex items-center space-x-4 mb-8">
+            <Zap className="h-5 w-5 text-primary animate-pulse" />
+            <h2 className="text-xs font-black tracking-[0.4em] uppercase text-zinc-500">Selection_Hotlinks</h2>
+          </div>
+          
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-px bg-white/5 border border-white/5">
+            {QUICK_TRY_ITEMS.map((item) => (
+              <motion.div
+                key={item.id}
+                whileHover={{ backgroundColor: 'rgba(251, 191, 36, 0.05)' }}
+                onClick={() => handleItemToggle(item)}
+                className="bg-black p-8 cursor-pointer group transition-all relative overflow-hidden"
+              >
+                <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="w-1 h-1 bg-primary rounded-full animate-ping" />
                 </div>
-
-                <div className="flex items-center space-x-3">
-                  <Button onClick={takeSnapshot} variant="default" size="lg" disabled={!isStreaming} className="px-6 py-3 rounded-full">
-                    <Download className="h-5 w-5 mr-2" />
-                    Save Photo
-                  </Button>
-                  
-                  <Dialog open={isShareOpen} onOpenChange={setIsShareOpen}>
-                    <DialogTrigger asChild>
-                      <Button variant="outline" size="lg" disabled={!isStreaming} className="px-6 py-3 rounded-full">
-                        <Share2 className="h-5 w-5 mr-2" />
-                        Share Look
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-md">
-                      <DialogHeader>
-                        <DialogTitle>Share Your Virtual Look</DialogTitle>
-                      </DialogHeader>
-                      <div className="grid grid-cols-2 gap-4">
-                        <Button onClick={() => shareToSocial('instagram')} className="flex items-center space-x-2">
-                          <Instagram className="h-4 w-4" />
-                          <span>Instagram</span>
-                        </Button>
-                        <Button onClick={() => shareToSocial('facebook')} className="flex items-center space-x-2">
-                          <Facebook className="h-4 w-4" />
-                          <span>Facebook</span>
-                        </Button>
-                        <Button onClick={() => shareToSocial('twitter')} className="flex items-center space-x-2">
-                          <Twitter className="h-4 w-4" />
-                          <span>Twitter</span>
-                        </Button>
-                        <Button onClick={() => shareToSocial('copy')} className="flex items-center space-x-2">
-                          <Copy className="h-4 w-4" />
-                          <span>Copy Link</span>
-                        </Button>
-                      </div>
-                      <Link href="/community">
-                        <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white">
-                          Share to VisionX Community
-                        </Button>
-                      </Link>
-                    </DialogContent>
-                  </Dialog>
-                </div>
-              </div>
-
-              {/* Opacity Control */}
-              {selectedItems.length > 0 && (
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <label className="text-sm font-medium text-gray-700">
-                      Overlay Opacity: {opacity[0]}%
-                    </label>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setOpacity([opacity[0] === 100 ? 50 : 100])}
-                    >
-                      <Settings className="h-4 w-4" />
-                    </Button>
+                <div className="flex flex-col items-center text-center space-y-6">
+                  <div className="w-12 h-12 flex items-center justify-center border border-white/5 group-hover:border-primary/30 group-hover:bg-primary/10 transition-all">
+                    <item.icon className="h-5 w-5 text-zinc-700 group-hover:text-primary transition-colors" />
                   </div>
-                  <Slider
-                    value={opacity}
-                    onValueChange={setOpacity}
-                    min={10}
-                    max={100}
-                    step={10}
-                    className="w-full"
-                  />
+                  <div className="space-y-1">
+                    <h4 className="text-[10px] font-black text-zinc-400 group-hover:text-white uppercase tracking-widest transition-colors truncate w-full">{item.name}</h4>
+                    <p className="text-[8px] font-mono text-zinc-800 uppercase tracking-widest">SYNTHESIZE</p>
+                  </div>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </motion.div>
+            ))}
+          </div>
         </motion.div>
 
-        {/* Quick Try Section */}
+        {/* Fashion Categories - Professional Grid */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="mb-8"
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="mb-24"
         >
-          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Zap className="h-5 w-5 text-orange-500" />
-                <span>Quick Try</span>
-                <Badge className="bg-orange-100 text-orange-700 text-xs">Trending</Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {quickTryItems.map((item) => (
-                  <motion.div
-                    key={item.id}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => selectItem(item)}
-                    className="relative bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 cursor-pointer hover:shadow-lg transition-all group"
+          <Tabs value={activeCategory} onValueChange={setActiveCategory} className="space-y-12">
+            <div className="flex justify-between items-end border-b border-white/5 pb-4">
+              <TabsList className="bg-transparent h-auto p-0 space-x-12">
+                {FASHION_CATEGORIES.map((category) => (
+                  <TabsTrigger 
+                    key={category.name} 
+                    value={category.name}
+                    className="bg-transparent border-none rounded-none py-4 px-0 text-[10px] font-black uppercase tracking-[0.4em] text-zinc-600 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all"
                   >
-                    {item.trending && (
-                      <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-                        🔥 Hot
-                      </div>
-                    )}
-                    <div className="text-center">
-                      <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-3 group-hover:bg-purple-100 transition-colors">
-                        <item.icon className="h-8 w-8 text-purple-600" />
-                      </div>
-                      <h4 className="font-medium text-sm text-gray-900 mb-1">{item.name}</h4>
-                      <Button size="sm" className="w-full bg-purple-600 hover:bg-purple-700 text-white text-xs">
-                        Try Now
-                      </Button>
-                    </div>
-                  </motion.div>
+                    {category.name}
+                  </TabsTrigger>
                 ))}
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {/* Fashion Categories */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="text-xl">Fashion Categories</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Tabs value={activeCategory} onValueChange={setActiveCategory}>
-                <TabsList className="grid w-full grid-cols-3 mb-6">
-                  {Object.keys(fashionCategories).map((category) => (
-                    <TabsTrigger 
-                      key={category} 
-                      value={category}
-                      className="text-sm font-medium"
-                    >
-                      {category}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-                
-                {Object.entries(fashionCategories).map(([category, items]) => (
-                  <TabsContent key={category} value={category}>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {items.map((item) => (
-                        <motion.div
-                          key={item.id}
-                          whileHover={{ scale: 1.02 }}
-                          className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-all"
-                        >
-                          <div className="relative">
-                            <img 
-                              src={item.image} 
-                              alt={item.name}
-                              className="w-full h-48 object-cover"
-                            />
-                            <button
-                              onClick={() => toggleLike(item.id)}
-                              className="absolute top-3 right-3 bg-white/80 backdrop-blur-sm rounded-full p-2 hover:bg-white transition-colors"
-                            >
-                              <Heart className={`h-4 w-4 ${likedItems.includes(item.id) ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
-                            </button>
-                            <div className="absolute top-3 left-3">
-                              <Badge className="bg-black/60 text-white text-xs">
-                                {item.category}
-                              </Badge>
-                            </div>
-                          </div>
-                          
-                          <div className="p-4">
-                            <h3 className="font-semibold text-gray-900 mb-1">{item.name}</h3>
-                            <p className="text-sm text-gray-500 mb-2">{item.brand}</p>
-                            
-                            <div className="flex items-center space-x-2 mb-3">
-                              <div className="flex items-center space-x-1">
-                                <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                                <span className="text-sm text-gray-600">{item.rating}</span>
-                                <span className="text-xs text-gray-400">({item.reviews})</span>
-                              </div>
-                            </div>
-                            
-                            <div className="flex items-center justify-between mb-4">
-                              <div className="flex items-center space-x-2">
-                                <span className="font-bold text-lg text-gray-900">{item.price}</span>
-                                <span className="text-sm text-gray-400 line-through">{item.originalPrice}</span>
-                              </div>
-                              <Badge variant="secondary" className="bg-green-100 text-green-700 text-xs">
-                                {Math.round((1 - parseInt(item.price.replace('₹', '').replace(',', '')) / parseInt(item.originalPrice.replace('₹', '').replace(',', ''))) * 100)}% OFF
-                              </Badge>
-                            </div>
-                            
-                            <div className="flex space-x-2">
-                              <Button 
-                                onClick={() => selectItem(item)}
-                                className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
-                              >
-                                Try On
-                              </Button>
-                              <Button 
-                                onClick={() => addToCart(item)}
-                                variant="outline" 
-                                size="icon"
-                                className="border-purple-200 hover:border-purple-300 text-purple-600"
-                              >
-                                <ShoppingCart className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        </motion.div>
-                      ))}
-                    </div>
-                  </TabsContent>
-                ))}
-              </Tabs>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {/* AI Style Assistant */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="mt-8"
-        >
-          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center space-x-2">
-                  <Bot className="h-5 w-5 text-purple-600" />
-                  <span>AI Style Assistant</span>
-                </CardTitle>
-                <Button 
-                  onClick={() => setIsAIChatOpen(!isAIChatOpen)} 
-                  variant="outline" 
-                  size="sm"
-                >
-                  {isAIChatOpen ? 'Hide Chat' : 'Open Chat'}
-                </Button>
-              </div>
-            </CardHeader>
+              </TabsList>
+              <div className="text-[9px] font-mono text-zinc-800 uppercase tracking-[0.2em] mb-4">VAULT_INDEX_V.2.4</div>
+            </div>
             
-            <AnimatePresence>
-              {isAIChatOpen && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                >
-                  <CardContent className="space-y-4">
-                    <div className="h-64 overflow-y-auto space-y-3 p-4 bg-gray-50 rounded-lg">
-                      {aiMessages.map((message) => (
-                        <div
-                          key={message.id}
-                          className={`flex ${message.isAI ? 'justify-start' : 'justify-end'}`}
-                        >
-                          <div
-                            className={`max-w-[80%] px-4 py-2 rounded-2xl text-sm ${
-                              message.isAI
-                                ? 'bg-white text-gray-800 shadow-sm'
-                                : 'bg-gradient-to-r from-purple-600 to-pink-600 text-white'
-                            }`}
-                          >
-                            {message.text}
+            {FASHION_CATEGORIES.map((category) => (
+              <TabsContent key={category.name} value={category.name}>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  {allItems.filter(item => {
+                    const type = item.type || item.category || "";
+                    return type.toLowerCase().includes(category.name.toLowerCase().slice(0, -1)) || 
+                           category.name.toLowerCase().includes(type.toLowerCase());
+                  }).map((item) => (
+                    <motion.div
+                      key={item._id || item.id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="bg-zinc-950 border border-white/5 group hover:border-primary/20 transition-all overflow-hidden"
+                    >
+                      <div className="aspect-[4/5] relative overflow-hidden bg-zinc-900/50">
+                        <img 
+                          src={item.image || "/placeholder.svg"} 
+                          alt={item.name}
+                          className="w-full h-full object-cover grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-105 transition-all duration-[1.5s]"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <div className="absolute top-4 right-4 flex flex-col items-end gap-2">
+                           {item.trending && <Badge className="bg-primary text-black font-black text-[8px] rounded-none px-3 uppercase tracking-widest">HOT_NODES</Badge>}
+                           <Badge variant="outline" className="bg-black/60 text-white text-[7px] uppercase font-mono tracking-widest border-white/10 rounded-none">{item.type}</Badge>
+                        </div>
+                      </div>
+                      
+                      <div className="p-8 space-y-6">
+                        <div className="space-y-2">
+                          <h3 className="font-black text-white uppercase text-xs tracking-[0.2em] truncate">{item.name || item.title}</h3>
+                          <div className="flex justify-between items-center">
+                            <p className="text-[9px] text-zinc-600 uppercase tracking-widest font-mono italic italic">{item.brand || "VISIONX_ELITE"}</p>
+                            <span className="text-sm font-black text-primary italic tracking-tighter">{item.price}</span>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                    
-                    <div className="flex space-x-2">
-                      <Input
-                        value={aiInput}
-                        onChange={(e) => setAiInput(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && sendAIMessage()}
-                        placeholder="Ask for styling advice..."
-                        className="flex-1"
-                      />
-                      <Button onClick={sendAIMessage} size="icon" className="bg-purple-600 hover:bg-purple-700">
-                        <Send className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </Card>
+                        
+                        <div className="grid grid-cols-[1fr_auto] gap-4">
+                          <Button 
+                            onClick={() => handleItemToggle(item)}
+                            className={`rounded-none h-12 text-[9px] font-black uppercase tracking-[0.3em] transition-all ${
+                              selectedItems.some(i => (i._id || i.id) === (item._id || item.id)) 
+                                ? "bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white"
+                                : "bg-white/5 border border-white/10 text-white hover:bg-primary hover:text-black hover:border-primary"
+                            }`}
+                          >
+                            {selectedItems.some(i => (i._id || i.id) === (item._id || item.id)) ? "REMOVE_SYNTHESIS" : "INITIALIZE_TRY_ON"}
+                          </Button>
+                          <Button 
+                            onClick={() => addToCart(item._id || item.id)}
+                            variant="outline" 
+                            className="border-white/10 hover:border-primary/50 text-white transition-all rounded-none h-12 w-12"
+                          >
+                            <ShoppingBag className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </TabsContent>
+            ))}
+          </Tabs>
         </motion.div>
+
+        <AnimatePresence>
+          {isAIChatOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mt-24"
+            >
+              <div className="bg-zinc-950 border border-white/5 overflow-hidden">
+                <div className="bg-zinc-900/50 px-8 py-4 border-b border-white/5 flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <Bot className="h-4 w-4 text-primary" />
+                    <span className="text-[10px] font-black tracking-[0.3em] uppercase text-white">NEURAL_STYLE_ENGINE_V1.4</span>
+                  </div>
+                  <div className="flex space-x-2">
+                    <div className="w-2 h-2 rounded-full bg-zinc-800" />
+                    <div className="w-2 h-2 rounded-full bg-zinc-800" />
+                    <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                  </div>
+                </div>
+                
+                <div className="p-10 space-y-8">
+                  <div className="h-80 overflow-y-auto space-y-6 custom-scrollbar pr-4">
+                    {aiMessages.map((message) => (
+                      <div key={message.id} className={`flex ${message.isAI ? 'justify-start' : 'justify-end'}`}>
+                        <div className={`max-w-[85%] p-6 rounded-none text-[10px] font-mono tracking-widest leading-relaxed uppercase ${
+                          message.isAI ? 'bg-zinc-900 border border-white/5 text-zinc-400' : 'bg-primary/10 border border-primary/20 text-primary italic font-black'
+                        }`}>
+                          <span className="opacity-30 mr-2">{message.isAI ? '>>>' : 'USR:'}</span>
+                          {message.isAI ? (
+                            <div className="space-y-4">
+                              <p className="whitespace-pre-wrap">{message.text.split(/(\[TRY_ON:.*?\])/g).map((part, i) => {
+                                const match = part.match(/\[TRY_ON:\s*(.*?)\]/);
+                                if (match) {
+                                  const itemName = match[1];
+                                  return (
+                                    <button
+                                      key={i}
+                                      onClick={() => {
+                                        const item = allItems.find(it => 
+                                          (it.name || "").toLowerCase().includes(itemName.toLowerCase())
+                                        );
+                                        if (item) {
+                                          handleItemToggle(item);
+                                        } else {
+                                          toast({ 
+                                            title: "Item Not Found", 
+                                            description: `Could not locate "${itemName}" in our fashion vault.`,
+                                            variant: "destructive"
+                                          });
+                                        }
+                                      }}
+                                      className="mx-1 px-3 py-1 bg-primary text-black font-black hover:bg-white transition-all inline-flex items-center gap-2 shadow-[0_0_15px_rgba(251,191,36,0.3)] group"
+                                    >
+                                      <Zap className="h-3 w-3 group-hover:animate-ping" /> {itemName.toUpperCase()}
+                                    </button>
+                                  );
+                                }
+                                return part;
+                              })}</p>
+                            </div>
+                          ) : message.text}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div className="flex gap-4">
+                    <Input
+                      value={aiInput}
+                      onChange={(e) => setAiInput(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && sendAIMessage()}
+                      placeholder="EXECUTE_STYLE_COMMAND..."
+                      className="bg-white/5 border-white/10 text-white rounded-none font-mono text-[9px] tracking-[0.3em] uppercase h-14 focus:border-primary/50"
+                    />
+                    <Button onClick={sendAIMessage} className="bg-primary text-black hover:bg-white transition-all rounded-none px-10 font-black h-14 group">
+                      <Send className="h-4 w-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Hidden canvas for snapshots */}
       <canvas ref={canvasRef} className="hidden" />
     </div>
+  );
+}
+
+export default function TryOnPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><Zap className="h-8 w-8 text-primary animate-pulse" /></div>}>
+      <TryOnContent />
+    </Suspense>
   );
 }

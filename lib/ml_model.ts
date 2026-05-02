@@ -1,38 +1,7 @@
 // This file would contain the actual ML model integrations
 // For demonstration, we're showing the structure
 
-export interface FashionAnalysisResult {
-  skinTone: string
-  bodyType: string
-  faceShape: string
-  measurements: any
-  colorPalette: string[]
-  stylePreference: string
-  recommendations: StyleRecommendation[]
-  mlServerStatus?: string
-  errors?: any
-}
-
-export interface StyleRecommendation {
-  id: number
-  style: string
-  match: number
-  description: string
-  matchDetails?: string
-  skinTone: string
-  bodyType: string
-  items: RecommendationItem[]
-  colors: string[]
-  gradient: string
-}
-
-export interface RecommendationItem {
-  name: string
-  price: string
-  image: string
-  confidence: number
-  category: string
-}
+import { FashionAnalysisResult, StyleRecommendation, RecommendationItem } from '@/types/fashion';
 
 // Configuration for your ML server
 const ML_SERVER_URL = process.env.NEXT_PUBLIC_ML_SERVER_URL
@@ -400,8 +369,9 @@ export class StyleRecommendationEngine {
     const itemDatabase: { [key: string]: RecommendationItem[] } = {
       blazers: [
         {
+          _id: "rec-blazer-1",
           name: "Tailored Blazer",
-          price: "$249",
+          price: "₹18,500",
           image: "https://images.pexels.com/photos/1043473/pexels-photo-1043473.jpeg",
           confidence: 0.92,
           category: "Outerwear",
@@ -409,8 +379,9 @@ export class StyleRecommendationEngine {
       ],
       "button-downs": [
         {
+          _id: "rec-shirt-1",
           name: "Crisp White Shirt",
-          price: "$89",
+          price: "₹3,999",
           image: "https://images.pexels.com/photos/1036622/pexels-photo-1036622.jpeg",
           confidence: 0.89,
           category: "Tops",
@@ -418,14 +389,14 @@ export class StyleRecommendationEngine {
       ],
       "tailored-pants": [
         {
+          _id: "rec-pant-1",
           name: "Dark Wash Jeans",
-          price: "$129",
+          price: "₹6,499",
           image: "https://images.pexels.com/photos/1021693/pexels-photo-1021693.jpeg",
           confidence: 0.87,
           category: "Bottoms",
         },
       ],
-      // Add more categories as needed
     }
 
     const items: RecommendationItem[] = []
@@ -438,22 +409,25 @@ export class StyleRecommendationEngine {
     if (items.length === 0) {
       return [
         {
+          _id: "mock-blazer-1",
           name: "Classic Blazer",
-          price: "$199",
+          price: "₹15,999",
           image: "https://images.pexels.com/photos/1043473/pexels-photo-1043473.jpeg",
           confidence: 0.85,
           category: "Outerwear",
         },
         {
+          _id: "mock-top-1",
           name: "Essential Top",
-          price: "$79",
+          price: "₹4,999",
           image: "https://images.pexels.com/photos/1036622/pexels-photo-1036622.jpeg",
           confidence: 0.82,
           category: "Tops",
         },
         {
+          _id: "mock-bottom-1",
           name: "Perfect Fit Bottoms",
-          price: "$119",
+          price: "₹8,999",
           image: "https://images.pexels.com/photos/1021693/pexels-photo-1021693.jpeg",
           confidence: 0.8,
           category: "Bottoms",
